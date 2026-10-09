@@ -461,7 +461,7 @@ em{font-family:var(--f-serif);font-style:italic;font-weight:400;letter-spacing:-
 /* ---------- footer ---------- */
 
 .footer {
-  background: var(--ink);
+  background: #0a2540 !important;
   color: #ffffff;
   border-top: 1px solid rgba(255,255,255,.15);
   padding: 72px 0 30px;
