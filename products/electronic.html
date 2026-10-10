@@ -56,29 +56,123 @@
           <li><span>Approach</span><strong>Assess · Repair · Test</strong></li>
         </ul>
       </div>
-      <figure class="pv hero-anim">
-        <!-- FORCE FULL-BLEED IMAGE: no white corners, covers the whole card -->
-        <div class="pv-card tilt" style="overflow:hidden !important;padding:0 !important;display:block !important;border-radius:18px !important;">
-          <img id="pvMain" src="../Elec1.jpg" alt="Electronic Repair &amp; Maintenance" width="1200" height="1200"
-               style="display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;border-radius:0 !important;">
-        </div>
-        <div class="hud hud-p1"><span class="hud-dot"></span><span><small>Coverage</small><strong>Board &amp; system level</strong></span></div>
-        <div class="hud hud-p2"><small>Turnaround</small><strong>Assessment first, then repair</strong></div>
-        <div class="pv-thumbs" role="group" aria-label="Service views">
-          <!-- Thumbnail 1 — Elec1.jpg -->
-          <button type="button" class="pv-thumb is-on" data-src="../Elec1.jpg" aria-label="View 1" aria-pressed="true"
-                  style="overflow:hidden !important;padding:0 !important;">
-            <img src="../Elec1.jpg" alt="" loading="lazy"
-                 style="display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;">
-          </button>
-          <!-- Thumbnail 2 — Elec2.jpg  →  check the EXACT filename on disk -->
-          <button type="button" class="pv-thumb" data-src="../Elec2.png" aria-label="View 2" aria-pressed="false"
-                  style="overflow:hidden !important;padding:0 !important;">
-            <img src="../Elec2.png" alt="" loading="lazy"
-                 style="display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;">
-          </button>
-        </div>
-      </figure>
+     <figure class="pv hero-anim">
+  <!-- FORCE FULL-BLEED IMAGE: no white corners, covers the whole card -->
+  <div class="pv-card tilt" id="elecSlider"
+       style="position:relative !important;overflow:hidden !important;padding:0 !important;display:block !important;border-radius:18px !important;">
+
+    <img id="elecMain"
+         class="is-active"
+         src="../Elec1.jpg"
+         alt="Electronic Repair &amp; Maintenance view 1"
+         width="1200" height="1200"
+         style="display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;border-radius:0 !important;opacity:1;transform:scale(1);transition:opacity .7s ease,transform .7s ease;">
+
+    <img src="../Elec2.png"
+         alt="Electronic Repair &amp; Maintenance view 2"
+         width="1200" height="1200"
+         style="position:absolute !important;inset:0 !important;display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;border-radius:0 !important;opacity:0;transform:scale(1.04);pointer-events:none;transition:opacity .7s ease,transform .7s ease;">
+
+    <span aria-hidden="true"
+          style="position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(10,37,64,.08);overflow:hidden;z-index:3;">
+      <i id="elecBar" style="display:block;height:100%;width:0;background:#0a2540;transform-origin:left center;"></i>
+    </span>
+  </div>
+
+  <div class="hud hud-p1"><span class="hud-dot"></span><span><small>Coverage</small><strong>Board &amp; system level</strong></span></div>
+  <div class="hud hud-p2"><small>Turnaround</small><strong>Assessment first, then repair</strong></div>
+
+  <div class="pv-thumbs" role="group" aria-label="Service views">
+    <!-- Thumbnail 1 — Elec1.jpg -->
+    <button type="button" class="pv-thumb is-on" data-src="../Elec1.jpg" aria-label="View 1" aria-pressed="true"
+            style="overflow:hidden !important;padding:0 !important;">
+      <img src="../Elec1.jpg" alt="" loading="lazy"
+           style="display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;">
+    </button>
+    <!-- Thumbnail 2 — Elec2.png  →  check the EXACT filename on disk -->
+    <button type="button" class="pv-thumb" data-src="../Elec2.png" aria-label="View 2" aria-pressed="false"
+            style="overflow:hidden !important;padding:0 !important;">
+      <img src="../Elec2.png" alt="" loading="lazy"
+           style="display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;">
+    </button>
+  </div>
+
+  <script>
+  (function () {
+    var slider = document.getElementById('elecSlider');
+    if (!slider) return;
+
+    var slides = Array.prototype.slice.call(slider.querySelectorAll('img'));
+    var bar    = document.getElementById('elecBar');
+    var thumbs = Array.prototype.slice.call(
+      slider.parentElement.querySelectorAll('.pv-thumbs .pv-thumb')
+    );
+    if (slides.length < 2) return;
+
+    var DELAY = 2000;
+    var index = 0;
+    var timer = null;
+
+    function paint(n) {
+      index = (n + slides.length) % slides.length;
+
+      slides.forEach(function (img, k) {
+        var on = (k === index);
+        img.style.opacity       = on ? '1' : '0';
+        img.style.transform     = on ? 'scale(1)' : 'scale(1.04)';
+        img.style.pointerEvents = on ? 'auto' : 'none';
+      });
+
+      thumbs.forEach(function (t, k) {
+        var on = (k === index);
+        t.classList.toggle('is-on', on);
+        t.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+
+      if (bar) {
+        bar.style.animation = 'none';
+        void bar.offsetWidth;
+        bar.style.animation = 'elecBar ' + DELAY + 'ms linear forwards';
+      }
+    }
+
+    function start() { stop(); timer = setInterval(function () { paint(index + 1); }, DELAY); }
+    function stop()  { if (timer) { clearInterval(timer); timer = null; } }
+
+    if (!document.getElementById('elecBarKF')) {
+      var st = document.createElement('style');
+      st.id = 'elecBarKF';
+      st.textContent = '@keyframes elecBar{from{width:0}to{width:100%}}';
+      document.head.appendChild(st);
+    }
+
+    paint(0);
+    start();
+
+    slider.addEventListener('mouseenter', stop);
+    slider.addEventListener('mouseleave', start);
+    slider.addEventListener('focusin', stop);
+    slider.addEventListener('focusout', start);
+    document.addEventListener('visibilitychange', function () {
+      document.hidden ? stop() : start();
+    });
+
+    thumbs.forEach(function (t, k) {
+      t.addEventListener('click', function () { paint(k); start(); });
+    });
+
+    var x0 = null;
+    slider.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; stop(); }, { passive: true });
+    slider.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      if (Math.abs(dx) > 40) paint(index + (dx < 0 ? 1 : -1));
+      x0 = null;
+      start();
+    }, { passive: true });
+  })();
+  </script>
+</figure>
     </div>
   </section>
 
@@ -363,7 +457,7 @@
   <div class="container">
     <div class="footer-top">
       <div class="footer-brand">
-        <img src="Footer logo.png" alt="Teknomen (Pvt) Ltd" width="200" loading="lazy">
+        <img src="../Footer logo.png" alt="Teknomen (Pvt) Ltd" width="200" loading="lazy">
         <p>Industrial automation and engineering solutions since 1992.</p>
         <a class="btn btn-dark btn-sm" href="index.html#quote">Request a Quote</a>
       </div>
