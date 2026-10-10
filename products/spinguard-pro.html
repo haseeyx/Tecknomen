@@ -13,6 +13,118 @@
 <link rel="stylesheet" href="https://unpkg.com/lenis@1.3.26/dist/lenis.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
 <link rel="stylesheet" href="../style.css">
+
+<!-- ===== IMAGE SCROLLER STYLES (or move to style.css) ===== -->
+<style>
+  /* wrapper -------------------------------------------------- */
+  .pv-slider{
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /* every slide ---------------------------------------------- */
+  .pv-slider .pv-slide{
+    display: block;
+    width: 100%;
+    height: auto;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity .8s cubic-bezier(.4,0,.2,1),
+                transform .8s cubic-bezier(.4,0,.2,1);
+    will-change: opacity, transform;
+  }
+
+  /* slides after the first are stacked on top ---------------- */
+  .pv-slider .pv-slide + .pv-slide{
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transform: scale(1.06);
+    pointer-events: none;
+  }
+
+  /* active slide --------------------------------------------- */
+  .pv-slider .pv-slide.is-active{
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+
+  /* dots ----------------------------------------------------- */
+  .pv-dots{
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 18px rgba(0,0,0,.10);
+    z-index: 3;
+  }
+  .pv-dot{
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(15,20,30,.22);
+    cursor: pointer;
+    transition: width .35s ease, background .35s ease, border-radius .35s ease;
+  }
+  .pv-dot:hover{ background: rgba(15,20,30,.42); }
+  .pv-dot.is-active{
+    width: 26px;
+    border-radius: 999px;
+    background: #0f141e;
+  }
+  .pv-dot:focus-visible{
+    outline: 2px solid #0f141e;
+    outline-offset: 3px;
+  }
+
+  /* progress bar (optional, sits under the dots) ------------- */
+  .pv-progress{
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: rgba(15,20,30,.08);
+    z-index: 3;
+    overflow: hidden;
+  }
+  .pv-progress i{
+    display: block;
+    height: 100%;
+    width: 0;
+    background: #0f141e;
+    transform-origin: left center;
+  }
+  .pv-progress i.run{
+    animation: pvBar 2s linear forwards;
+  }
+  @keyframes pvBar{ from{ width: 0 } to{ width: 100% } }
+
+  /* accessibility: no zoom/fade motion ----------------------- */
+  @media (prefers-reduced-motion: reduce){
+    .pv-slider .pv-slide,
+    .pv-slider .pv-slide + .pv-slide{
+      transform: none !important;
+      transition: opacity .25s linear;
+    }
+    .pv-progress{ display: none; }
+  }
+</style>
+<!-- ===== /IMAGE SCROLLER STYLES ===== -->
+
 </head>
 <body class="pg-product">
 <a class="skip" href="#main">Skip to content</a>
@@ -47,14 +159,34 @@
         <div class="actions hero-anim"><a class="btn btn-dark" href="../index.html?product=spinguard-pro#quote">Request a quote <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="btn btn-ghost" href="../SPINGUARD-Pro-Brochure.pdf" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Brochure</a><a class="link-arrow" href="https://wa.me/923156185476?text=Hi%2C%20I%20would%20like%20technical%20consultation%20for%20SpinGuard%20Pro." target="_blank" rel="noopener">Ask an engineer</a></div>
         <ul class="chips hero-anim"><li><span>Application</span><strong>Textile ring spinning frames</strong></li><li><span>Technology</span><strong>Software-based automation</strong></li><li><span>Installation</span><strong>Software upgrade</strong></li></ul>
       </div>
+
+      <!-- ===== IMAGE SCROLLER ===== -->
       <figure class="pv hero-anim">
-        <div class="pv-card tilt">
-          <img id="pvMain" src="../img/products/spinguard.webp" alt="SpinGuard Pro" width="1200" height="1200">
+        <div class="pv-card tilt pv-slider" id="pvSlider">
+
+          <img class="pv-slide is-active"
+               src="../img/products/spinguard.webp"
+               alt="SpinGuard Pro control unit"
+               width="1200" height="1200">
+
+          <img class="pv-slide"
+               src="../spin2.png"
+               alt="SpinGuard Pro installed on a ring spinning frame"
+               width="1200" height="1200">
+
+          <div class="pv-dots" role="tablist" aria-label="SpinGuard Pro images">
+            <button class="pv-dot is-active" type="button" role="tab" aria-selected="true"  aria-label="Show image 1"></button>
+            <button class="pv-dot"           type="button" role="tab" aria-selected="false" aria-label="Show image 2"></button>
+          </div>
+
+          <span class="pv-progress" aria-hidden="true"><i></i></span>
         </div>
+
         <div class="hud hud-p1"><span class="hud-dot"></span><span><small>Used on</small><strong>Ring spinning frames</strong></span></div>
         <div class="hud hud-p2"><small>Key data</small><strong>No added hardware · EJM-128, EJM-168, FA-507</strong></div>
-        
       </figure>
+      <!-- ===== /IMAGE SCROLLER ===== -->
+
     </div>
   </section>
 
@@ -204,5 +336,94 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js"></script>
 <script src="../script.js"></script>
 <script src="../motion.js"></script>
+
+<!-- ===== IMAGE SCROLLER LOGIC (or move to script.js) ===== -->
+<script>
+(function () {
+  var slider = document.getElementById('pvSlider');
+  if (!slider) return;
+
+  var slides = Array.prototype.slice.call(slider.querySelectorAll('.pv-slide'));
+  var dots   = Array.prototype.slice.call(slider.querySelectorAll('.pv-dot'));
+  var bar    = slider.querySelector('.pv-progress i');
+  if (slides.length < 2) return;
+
+  var DELAY = 2000;          // ← change speed here (ms)
+  var index = 0;
+  var timer = null;
+
+  function paint(n) {
+    index = (n + slides.length) % slides.length;
+
+    slides.forEach(function (s, k) {
+      s.classList.toggle('is-active', k === index);
+    });
+
+    dots.forEach(function (d, k) {
+      var on = (k === index);
+      d.classList.toggle('is-active', on);
+      d.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+
+    if (bar) {
+      bar.classList.remove('run');
+      void bar.offsetWidth;           // restart the animation
+      bar.style.animationDuration = DELAY + 'ms';
+      bar.classList.add('run');
+    }
+  }
+
+  function go(n) { paint(n); }
+
+  function start() {
+    stop();
+    timer = setInterval(function () { paint(index + 1); }, DELAY);
+  }
+
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  /* init */
+  paint(0);
+  start();
+
+  /* pause while the user is looking at it */
+  slider.addEventListener('mouseenter', stop);
+  slider.addEventListener('mouseleave', start);
+  slider.addEventListener('focusin', stop);
+  slider.addEventListener('focusout', start);
+
+  /* pause in a background tab */
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { stop(); } else { start(); }
+  });
+
+  /* dots */
+  dots.forEach(function (d, k) {
+    d.addEventListener('click', function () {
+      paint(k);
+      start();
+    });
+  });
+
+  /* swipe on touch devices */
+  var x0 = null;
+  slider.addEventListener('touchstart', function (e) {
+    x0 = e.touches[0].clientX;
+    stop();
+  }, { passive: true });
+
+  slider.addEventListener('touchend', function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 40) { paint(index + (dx < 0 ? 1 : -1)); }
+    x0 = null;
+    start();
+  }, { passive: true });
+})();
+</script>
+<!-- ===== /IMAGE SCROLLER LOGIC ===== -->
+
 </body>
 </html>
