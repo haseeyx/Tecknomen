@@ -100,7 +100,7 @@
     );
     if (slides.length < 2) return;
 
-    var DELAY = 2000;
+    var DELAY = 4000;
     var index = 0;
     var timer = null;
 
@@ -341,19 +341,7 @@
       }
     </style>
 
-    <a href="../index.html" class="back-home-btn" aria-label="Back to home">
-      <span class="arrow" aria-hidden="true">
-        <svg viewBox="0 0 16 16">
-          <path d="M13 8H3.5M7.5 4l-4 4 4 4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                stroke-linecap="round"
-                stroke-linejoin="round"/>
-        </svg>
-      </span>
-      Back to home
-    </a>
+
   </div>
 </section>
 
@@ -402,6 +390,82 @@
     </div>
   </div>
 </section>
+
+
+
+
+
+
+<section>
+
+  <button
+    type="button"
+    id="scrollTopBtn"
+    aria-label="Scroll to top"
+    style="
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 999;
+    "
+  >
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" style="display:block;">
+      <path
+        d="M12 19V5M5 12l7-7 7 7"
+        fill="none"
+        stroke="#0a2a6b"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
+
+  <script>
+    (function () {
+      function initScrollTop() {
+        var btn = document.getElementById('scrollTopBtn');
+        if (!btn) return; // button not in DOM, exit safely
+
+        window.addEventListener('scroll', function () {
+          if (window.scrollY > 300) {
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+          } else {
+            btn.style.opacity = '0';
+            btn.style.pointerEvents = 'none';
+          }
+        });
+
+        btn.addEventListener('click', function () {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initScrollTop);
+      } else {
+        initScrollTop();
+      }
+    })();
+  </script>
+
+</section>
 </main>
 
 
@@ -425,7 +489,10 @@
       <div class="footer-brand">
         <img src="../Footer logo.png" alt="Teknomen (Pvt) Ltd" width="200" loading="lazy">
         <p>Industrial automation and engineering solutions since 1992.</p>
-        <a class="btn btn-dark btn-sm" href="index.html#quote">Request a Quote</a>
+        <a class="btn btn-sm" href="../index.html#quote"
+           style="background:#111;color:#fff;border:1px solid #111;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:9px 15px;border-radius:8px;font-weight:500;font-size:.875rem;">
+          Request a Quote
+        </a>
       </div>
 
       <div class="footer-col">
