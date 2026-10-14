@@ -13,6 +13,124 @@
 <link rel="stylesheet" href="https://unpkg.com/lenis@1.3.26/dist/lenis.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
 <link rel="stylesheet" href="style.css">
+<style>
+/* ============================================================
+   HERO TELEMETRY DASHBOARD (new)
+   Small live "admin panel" widget that sits over the 3D stage.
+   ============================================================ */
+.hero .hero-visual { position: relative; }
+
+.hero-dash {
+  position: absolute;
+  left: clamp(6px, 2.5%, 22px);
+  bottom: clamp(6px, 3%, 22px);
+  width: min(330px, 84%);
+  padding: 12px 14px 11px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(11,24,48,.82) 0%, rgba(7,16,34,.90) 100%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(130,180,255,.18);
+  box-shadow:
+    0 22px 60px rgba(2,10,30,.5),
+    inset 0 1px 0 rgba(255,255,255,.07);
+  color: #e9f0ff;
+  z-index: 4;
+  pointer-events: none;
+  font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+  transition: border-color .35s ease, box-shadow .35s ease;
+}
+.hero-dash.is-alert {
+  border-color: rgba(255,80,50,.62);
+  box-shadow:
+    0 22px 60px rgba(255,60,30,.30),
+    0 0 0 1px rgba(255,80,50,.25),
+    inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+.hd-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 9px;
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: #8fb0e0;
+}
+.hd-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #19d38f; box-shadow: 0 0 10px #19d38f;
+  animation: hdPulse 1.8s ease-in-out infinite;
+  flex: none;
+}
+.hero-dash.is-alert .hd-dot {
+  background: #ff3b1f;
+  box-shadow: 0 0 16px #ff3b1f, 0 0 32px rgba(255,59,31,.6);
+}
+@keyframes hdPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.4); opacity: .6; }
+}
+.hd-title { font-weight: 600; color: #dbe7ff; }
+.hd-frame { margin-left: auto; color: #7fa0d0; white-space: nowrap; }
+
+.hd-metrics {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px;
+  margin-bottom: 9px;
+}
+.hd-metric {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 7px 8px; border-radius: 10px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.055);
+  min-width: 0;
+}
+.hd-label {
+  font-size: 9px; letter-spacing: .07em; text-transform: uppercase;
+  color: #7e9ccb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hd-value {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 14px; font-weight: 500; color: #eaf4ff;
+  display: flex; align-items: baseline; gap: 3px;
+  line-height: 1.1; white-space: nowrap;
+}
+.hd-value small { font-size: 9px; color: #7e9ccb; font-weight: 400; letter-spacing: .04em; }
+.hero-dash.is-alert .hd-value { color: #ff8b73; }
+
+.hd-graph {
+  width: 100%; height: 56px;
+  border-radius: 10px; overflow: hidden;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.05);
+}
+.hd-graph canvas { display: block; width: 100%; height: 100%; }
+
+.hd-graph-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 7px; font-size: 9.5px; letter-spacing: .05em;
+  color: #7e9ccb;
+}
+.hd-status {
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(25,211,143,.14); color: #19d38f;
+  font-weight: 600; text-transform: uppercase; font-size: 9px;
+  transition: background .3s, color .3s;
+}
+.hd-status.is-alert { background: rgba(255,59,31,.16); color: #ff6a4d; }
+
+@media (max-width: 980px) {
+  .hero-dash { width: min(300px, 90%); }
+}
+@media (max-width: 640px) {
+  .hero-dash {
+    left: 8px; right: 8px; bottom: 8px;
+    width: auto;
+    padding: 10px 12px 9px;
+  }
+  .hd-metrics { gap: 5px; }
+  .hd-value { font-size: 12.5px; }
+  .hd-graph { height: 46px; }
+}
+</style>
 </head>
 <body class="pg-home">
 <!-- BUILD:header -->
@@ -74,6 +192,37 @@
           <strong>Resumed in 4 s</strong>
           <span class="hud-bar"><i></i></span>
         </div>
+
+        <!-- ===== NEW: live telemetry dashboard ===== -->
+        <div class="hero-dash" id="heroDash" role="group" aria-label="Live spindle telemetry">
+          <div class="hd-head">
+            <span class="hd-dot" aria-hidden="true"></span>
+            <span class="hd-title">Live telemetry</span>
+            <span class="hd-frame" id="hdSpindle">Spindle 142</span>
+          </div>
+          <div class="hd-metrics">
+            <div class="hd-metric">
+              <span class="hd-label">Speed</span>
+              <strong class="hd-value"><span id="hdRpm">18,240</span><small>rpm</small></strong>
+            </div>
+            <div class="hd-metric">
+              <span class="hd-label">Efficiency</span>
+              <strong class="hd-value"><span id="hdEff">98.6</span><small>%</small></strong>
+            </div>
+            <div class="hd-metric">
+              <span class="hd-label">Tension</span>
+              <strong class="hd-value"><span id="hdTen">4.12</span><small>cN</small></strong>
+            </div>
+          </div>
+          <div class="hd-graph">
+            <canvas id="hdCanvas" aria-hidden="true"></canvas>
+          </div>
+          <div class="hd-graph-foot">
+            <span>Output · last 60 s</span>
+            <span class="hd-status" id="hdStatus">Running</span>
+          </div>
+        </div>
+        <!-- ===== /NEW ===== -->
       </div>
     </div>
     <a class="scroll-cue" href="#clients" aria-label="Scroll to content"><span class="scroll-mouse"><i></i></span>Scroll</a>
@@ -595,12 +744,6 @@
     </div>
   </section>
 
-
-
-
-
-
-
 <section>
 
   <button
@@ -671,19 +814,6 @@
   </script>
 
 </section>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 </main>
 

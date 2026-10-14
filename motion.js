@@ -8,6 +8,8 @@
    - logo marquee reacts to scroll speed
    - product filter with GSAP Flip
    - magnetic buttons (mouse only)
+   - NEW: hero telemetry dashboard (live RPM / efficiency / tension +
+     sparkline graph that dips to zero on a "yarn break")
    Every effect checks for reduced motion and missing libraries, and nothing
    is hidden in a way that could leave content invisible.
 ============================================================ */
@@ -23,6 +25,7 @@
   run(navAutoHide);
   run(productFilter);
   run(spotlightBasics);
+  run(heroDashboard);          // <-- new, must run even without GSAP
   if (!HAS_GSAP || REDUCED) return;
 
   gsap.registerPlugin(ScrollTrigger);
@@ -243,6 +246,168 @@
       });
       b.addEventListener('pointerleave', () => gsap.to(b, { x: 0, y: 0, duration: 0.9, ease: 'elastic.out(1, 0.4)' }));
     });
+  }
+
+  /* ============================================================
+     NEW: hero telemetry dashboard
+     Live RPM / efficiency / tension, with a sparkline that dips
+     to zero on a "yarn break" and recovers — like a real spindle
+     monitoring HMI. Runs independently of GSAP.
+     ============================================================ */
+  function heroDashboard() {
+    const panel   = document.getElementById('heroDash');
+    const canvas  = document.getElementById('hdCanvas');
+    if (!panel || !canvas) return;
+    const ctx      = canvas.getContext('2d');
+    const rpmEl    = document.getElementById('hdRpm');
+    const effEl    = document.getElementById('hdEff');
+    const tenEl    = document.getElementById('hdTen');
+    const statusEl = document.getElementById('hdStatus');
+    const spindleEl= document.getElementById('hdSpindle');
+
+    const POINTS = 64;
+    const RPM_IDLE = 18240, EFF_IDLE = 98.6, TEN_IDLE = 4.12;
+    const data = new Array(POINTS).fill(EFF_IDLE);
+
+    const s = {
+      rpm: RPM_IDLE, eff: EFF_IDLE, ten: TEN_IDLE,
+      spindle: 142,
+      phase: 'run', phaseT: 0, breakFor: 2.4,
+      nextBreak: 5 + Math.random() * 5,
+      status: 'Running',
+    };
+
+    function fit() {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width  = Math.round(rect.width  * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function draw() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      ctx.clearRect(0, 0, w, h);
+
+      // horizontal grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,.07)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i <= 3; i++) {
+        const y = Math.round((h * i) / 4) + 0.5;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      const stepX = w / (POINTS - 1);
+      const toY = (v) => h - (Math.max(0, Math.min(100, v)) / 100) * (h - 8) - 4;
+
+      const alert = s.phase !== 'run';
+      const line = alert ? '#ff3b1f' : '#19d38f';
+
+      // area fill
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, alert ? 'rgba(255,59,31,.38)' : 'rgba(25,211,143,.38)');
+      grd.addColorStop(1, 'rgba(25,211,143,0)');
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      for (let i = 0; i < POINTS; i++) ctx.lineTo(i * stepX, toY(data[i]));
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fillStyle = grd;
+      ctx.fill();
+
+      // line
+      ctx.beginPath();
+      for (let i = 0; i < POINTS; i++) {
+        const x = i * stepX, y = toY(data[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // head dot with a soft glow
+      const lx = (POINTS - 1) * stepX, ly = toY(data[POINTS - 1]);
+      ctx.beginPath();
+      ctx.arc(lx - 1.5, ly, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = line;
+      ctx.shadowColor = line;
+      ctx.shadowBlur = 12;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    let last = performance.now();
+    let acc = 0;
+    const STEP = 0.36; // seconds per graph sample → ~23 s of history
+
+    function frame(now) {
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      acc += dt;
+      s.phaseT += dt;
+
+      if (s.phase === 'run') {
+        // gentle natural fluctuation
+        s.rpm += (RPM_IDLE - s.rpm) * 0.18 + (Math.random() - 0.5) * 90;
+        s.rpm = Math.max(17700, Math.min(18700, s.rpm));
+        s.eff += (EFF_IDLE - s.eff) * 0.14 + (Math.random() - 0.5) * 0.7;
+        s.eff = Math.max(94.5, Math.min(99.7, s.eff));
+        s.ten += (TEN_IDLE - s.ten) * 0.18 + (Math.random() - 0.5) * 0.06;
+        s.ten = Math.max(3.5, Math.min(4.7, s.ten));
+        s.status = 'Running';
+        if (s.phaseT > s.nextBreak) {
+          s.phase = 'break';
+          s.phaseT = 0;
+          s.breakFor = 2.2 + Math.random() * 1.4;
+          s.spindle = 100 + Math.floor(Math.random() * 900);
+          if (spindleEl) spindleEl.textContent = 'Spindle ' + s.spindle;
+        }
+      } else if (s.phase === 'break') {
+        // decay towards zero
+        s.rpm *= 0.80; s.eff *= 0.80; s.ten *= 0.78;
+        if (s.rpm < 40)  s.rpm = 0;
+        if (s.eff < 0.6) s.eff = 0;
+        if (s.ten < 0.06) s.ten = 0;
+        s.status = 'Yarn break';
+        if (s.phaseT > s.breakFor) { s.phase = 'recover'; s.phaseT = 0; }
+      } else {
+        // climb back to nominal
+        s.rpm += (RPM_IDLE - s.rpm) * 0.07;
+        s.eff += (EFF_IDLE - s.eff) * 0.07;
+        s.ten += (TEN_IDLE - s.ten) * 0.07;
+        s.status = 'Recovering';
+        if (s.eff > 97.6) { s.phase = 'run'; s.phaseT = 0; s.nextBreak = 6 + Math.random() * 6; }
+      }
+
+      if (rpmEl) rpmEl.textContent = Math.round(s.rpm).toLocaleString('en-US');
+      if (effEl) effEl.textContent = s.eff.toFixed(1);
+      if (tenEl) tenEl.textContent = s.ten.toFixed(2);
+      if (statusEl) statusEl.textContent = s.status;
+
+      const alert = s.phase !== 'run';
+      panel.classList.toggle('is-alert', alert);
+      if (statusEl) statusEl.classList.toggle('is-alert', alert);
+
+      // push a new sample into the sparkline
+      while (acc >= STEP) {
+        acc -= STEP;
+        const jitter = (Math.random() - 0.5) * 1.3;
+        data.push(Math.max(0, Math.min(100, s.eff + jitter)));
+        if (data.length > POINTS) data.shift();
+      }
+
+      draw();
+      requestAnimationFrame(frame);
+    }
+
+    fit();
+    draw();
+    requestAnimationFrame(frame);
+    new ResizeObserver(() => { fit(); draw(); }).observe(canvas);
   }
 
   /* ---------- helpers ---------- */
