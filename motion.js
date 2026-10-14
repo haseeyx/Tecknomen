@@ -1,17 +1,15 @@
 /* ============================================================
-   TEKNOMEN — motion layer (loads after script.js)
-   Navbar auto-hide, hero 3D scroll, pinned product coverflow,
-   heading reveals, logo marquee, product filter, magnetic
-   buttons, and the upgraded three-state telemetry dashboard.
-
-   Dashboard states:
-     run   → green,  values nominal, graph green
-     break → red,    values drop to zero, graph red
-     stuck → blue,   RPM collapses, tension spikes, graph blue
-
-   The state is driven by 'tek:spindle-alert' dispatched by
-   hero3d.js. The dashboard also runs its own random cycles so
-   it stays alive even if WebGL is unavailable.
+   TEKNOMEN — motion layer
+   - navbar, hero scroll, spotlight, headings, marquee, filter,
+     magnetic buttons (unchanged)
+   - telemetry dashboard: 4-band efficiency system
+       green  : 95-100%
+       blue   : 70-80%
+       yellow : 40-65%
+       red    : 0-20%
+     A new band is chosen randomly every ~3s. RPM and tension
+     scale with efficiency. The state is broadcast to the 3D
+     hero via the 'tek:eff-state' event.
 ============================================================ */
 (function () {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -34,7 +32,7 @@
   if (FINE) run(magnetic);
   window.addEventListener('load', () => ScrollTrigger.refresh());
 
-  /* ---------- navbar ---------- */
+  /* navbar */
   function navAutoHide() {
     const bar = document.getElementById('navBar');
     const prog = document.getElementById('navProgress');
@@ -56,7 +54,7 @@
     update();
   }
 
-  /* ---------- hero scroll ---------- */
+  /* hero scroll */
   function heroScroll() {
     const hero = document.querySelector('.hero');
     if (!hero) return;
@@ -72,7 +70,7 @@
     });
   }
 
-  /* ---------- product hero ---------- */
+  /* product hero */
   function productHeroScroll() {
     const hero = document.querySelector('.p-hero');
     if (!hero) return;
@@ -85,7 +83,7 @@
     });
   }
 
-  /* ---------- headings ---------- */
+  /* headings */
   function headings() {
     document.querySelectorAll('.sec-head').forEach((head) => {
       const h = head.querySelector('h2');
@@ -107,7 +105,7 @@
     });
   }
 
-  /* ---------- about statement ---------- */
+  /* about statement */
   function aboutStatement() {
     const el = document.querySelector('.about-statement');
     if (!el) return;
@@ -118,7 +116,7 @@
     });
   }
 
-  /* ---------- spotlight basics ---------- */
+  /* spotlight */
   function spotlightBasics() {
     const track = document.getElementById('spotTrack');
     if (!track) return;
@@ -153,7 +151,7 @@
     layout();
   }
 
-  /* ---------- spotlight pinned ---------- */
+  /* spotlight pinned */
   function spotlightPinned() {
     const section = document.getElementById('spotlight');
     const track = document.getElementById('spotTrack');
@@ -178,7 +176,7 @@
     });
   }
 
-  /* ---------- marquee ---------- */
+  /* marquee */
   function velocityMarquee() {
     const track = document.querySelector('.marquee-track');
     if (!track) return;
@@ -199,7 +197,7 @@
     });
   }
 
-  /* ---------- product filter ---------- */
+  /* product filter */
   function productFilter() {
     const grid = document.querySelector('#products .bento');
     const buttons = document.querySelectorAll('.filter-btn');
@@ -229,7 +227,7 @@
     }));
   }
 
-  /* ---------- magnetic ---------- */
+  /* magnetic */
   function magnetic() {
     document.querySelectorAll('.hero .btn, .p-hero .btn, .nav-cta .btn, .cta-content .btn, .spot-progress, .filter-btn').forEach((b) => {
       const xTo = gsap.quickTo(b, 'x', { duration: 0.5, ease: 'power3' });
@@ -244,7 +242,7 @@
   }
 
   /* ============================================================
-     HERO TELEMETRY DASHBOARD — three-state version
+     HERO TELEMETRY DASHBOARD — 4-band efficiency system
      ============================================================ */
   function heroDashboard() {
     const panel    = document.getElementById('heroDash');
@@ -265,6 +263,14 @@
     const tenWrap    = document.getElementById('hdTenWrap');
     const icons      = [...panel.querySelectorAll('.hd-ico')];
 
+    /* ---------- bands ---------- */
+    const BANDS = [
+      { key: 'green',  min: 95, max: 100, hex: '#19d38f', rgb: '25, 211, 143', label: 'Running',       toast: 'All spindles normal',              cls: 'is-eff-green'  },
+      { key: 'blue',   min: 70, max: 80,  hex: '#4a9dff', rgb: '74, 157, 255', label: 'Load reduced',  toast: '⚠ Load reduced — 70–80%',          cls: 'is-eff-blue'   },
+      { key: 'yellow', min: 40, max: 65,  hex: '#f5c542', rgb: '245, 197, 66', label: 'Degraded',      toast: '⚠ Efficiency degraded — 40–65%',   cls: 'is-eff-yellow' },
+      { key: 'red',    min: 0,  max: 20,  hex: '#ff3b1f', rgb: '255, 59, 31',  label: 'Critical',      toast: '⚠ Critical — spindles stopped',    cls: 'is-eff-red'    },
+    ];
+
     /* ---------- spindle matrix ---------- */
     const DOT_COUNT = 24;
     const dots = [];
@@ -275,29 +281,26 @@
         matrixEl.appendChild(d);
         dots.push(d);
       }
-      // trigger cascade after a beat
       requestAnimationFrame(() => matrixEl.classList.add('is-ready'));
     }
-    let dotTimer = 0;
-    function flashDot(kind) {
+    let focusDot = Math.floor(Math.random() * DOT_COUNT);
+    function moveFocusDot() {
       if (!dots.length) return;
-      // clear previous
-      dots.forEach((d) => d.classList.remove('is-broken', 'is-stuck'));
-      const idx = Math.floor(Math.random() * dots.length);
-      const cls = kind === 'stuck' ? 'is-stuck' : 'is-broken';
-      dots[idx].classList.add(cls);
-      clearTimeout(dotTimer);
-      dotTimer = setTimeout(() => dots[idx] && dots[idx].classList.remove(cls), 2800);
+      dots.forEach((d) => d.classList.remove('is-focus'));
+      focusDot = Math.floor(Math.random() * dots.length);
+      dots[focusDot].classList.add('is-focus');
     }
+    moveFocusDot();
 
-    /* ---------- bump + icon wiggle ---------- */
+    /* ---------- bump + wiggle ---------- */
     function bump(el) {
       if (!el) return;
       el.classList.remove('is-bump');
       void el.offsetWidth;
       el.classList.add('is-bump');
-      setTimeout(() => el.classList.remove('is-bump'), 800);
+      setTimeout(() => el.classList.remove('is-bump'), 850);
     }
+    function bumpAll() { bump(rpmWrap); bump(effWrap); bump(tenWrap); }
     function wiggleIcons() {
       icons.forEach((ic) => {
         ic.classList.remove('is-wiggle');
@@ -307,28 +310,52 @@
       });
     }
 
-    /* ---------- state machine ---------- */
+    /* ---------- state ---------- */
     const POINTS = 64;
-    const RPM_IDLE = 18240, EFF_IDLE = 98.6, TEN_IDLE = 4.12, NOMINAL = 98.6;
-
-    // stuck-state targets
-    const RPM_STUCK = 1400, EFF_STUCK = 42, TEN_STUCK = 6.8;
-
-    const data = new Array(POINTS).fill(EFF_IDLE);
 
     const s = {
-      rpm: RPM_IDLE, eff: EFF_IDLE, ten: TEN_IDLE,
+      effTarget: 98.6,     // where efficiency is heading
+      eff: 98.6,           // displayed value (lerped)
+      rpm: 18240,
+      ten: 4.12,
+      band: BANDS[0],
+      nextSwitch: 3.2,     // seconds until next band change
+      holdT: 0,
       spindle: 142,
-      phase: 'run',          // 'run' | 'break' | 'stuck' | 'recover'
-      recoveryTo: RPM_IDLE,
-      phaseT: 0,
-      breakFor: 2.4,
-      nextBreak: 5 + Math.random() * 5,
-      lastAlertAt: -99,
       status: 'Running',
-      lastKind: 'break',
     };
 
+    const data = new Array(POINTS).fill(98.6);
+
+    function pickBand(avoidKey) {
+      // pick a random band different from the current one
+      let b;
+      do { b = BANDS[Math.floor(Math.random() * BANDS.length)]; }
+      while (b.key === avoidKey && Math.random() < 0.85);
+      return b;
+    }
+
+    function applyBand(band) {
+      s.band = band;
+      // pick a target efficiency inside the band
+      s.effTarget = band.min + Math.random() * (band.max - band.min);
+      // update the panel class
+      BANDS.forEach((b) => panel.classList.toggle(b.cls, b.key === band.key));
+      if (statusText) statusText.textContent = band.label;
+      if (toastEl) toastEl.textContent = band.toast;
+      // wiggle icons + bump values
+      wiggleIcons();
+      bumpAll();
+      // pick a new focus spindle number
+      s.spindle = 100 + Math.floor(Math.random() * 900);
+      if (spindleEl) spindleEl.textContent = 'Spindle ' + s.spindle;
+      // pulse a new matrix dot
+      moveFocusDot();
+      // tell the 3D hero
+      document.dispatchEvent(new CustomEvent('tek:eff-state', { detail: { state: band.key } }));
+    }
+
+    /* ---------- canvas ---------- */
     function fit() {
       const rect = canvas.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
@@ -336,13 +363,6 @@
       canvas.width  = Math.round(rect.width  * dpr);
       canvas.height = Math.round(rect.height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    function currentColor() {
-      if (s.phase === 'break') return '#ff3b1f';
-      if (s.phase === 'stuck') return '#4a9dff';
-      if (s.phase === 'recover') return '#f5c542';
-      return '#19d38f';
     }
 
     function draw() {
@@ -361,11 +381,11 @@
       const stepX = w / (POINTS - 1);
       const toY = (v) => h - (Math.max(0, Math.min(100, v)) / 100) * (h - 8) - 4;
 
-      // dashed nominal line
-      const nominalY = toY(NOMINAL);
+      // dashed nominal line at 98.6
+      const nominalY = toY(98.6);
       ctx.save();
       ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = 'rgba(130,180,255,.28)';
+      ctx.strokeStyle = 'rgba(130,180,255,.22)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, nominalY);
@@ -373,24 +393,12 @@
       ctx.stroke();
       ctx.restore();
 
-      const alert = s.phase !== 'run';
-      const line  = currentColor();
+      const line = s.band.hex;
 
-      // area
+      // area fill
       const grd = ctx.createLinearGradient(0, 0, 0, h);
-      if (s.phase === 'break') {
-        grd.addColorStop(0, 'rgba(255,59,31,.42)');
-        grd.addColorStop(1, 'rgba(255,59,31,0)');
-      } else if (s.phase === 'stuck') {
-        grd.addColorStop(0, 'rgba(74,157,255,.42)');
-        grd.addColorStop(1, 'rgba(74,157,255,0)');
-      } else if (s.phase === 'recover') {
-        grd.addColorStop(0, 'rgba(245,197,66,.38)');
-        grd.addColorStop(1, 'rgba(245,197,66,0)');
-      } else {
-        grd.addColorStop(0, 'rgba(25,211,143,.42)');
-        grd.addColorStop(1, 'rgba(25,211,143,0)');
-      }
+      grd.addColorStop(0, `rgba(${s.band.rgb}, .40)`);
+      grd.addColorStop(1, `rgba(${s.band.rgb}, 0)`);
       ctx.beginPath();
       ctx.moveTo(0, h);
       for (let i = 0; i < POINTS; i++) ctx.lineTo(i * stepX, toY(data[i]));
@@ -410,153 +418,91 @@
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.shadowColor = line;
-      ctx.shadowBlur = alert ? 12 : 4;
+      ctx.shadowBlur = 8;
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // head dot + end-of-line light
+      // head glow — "the light at the end"
       const lx = (POINTS - 1) * stepX, ly = toY(data[POINTS - 1]);
-      // outer glow
-      const hl = ctx.createRadialGradient(lx - 2, ly, 0, lx - 2, ly, 18);
-      hl.addColorStop(0, line);
-      hl.addColorStop(1, 'rgba(0,0,0,0)');
+      const hl = ctx.createRadialGradient(lx - 2, ly, 0, lx - 2, ly, 20);
+      hl.addColorStop(0, `rgba(${s.band.rgb}, .85)`);
+      hl.addColorStop(0.6, `rgba(${s.band.rgb}, .25)`);
+      hl.addColorStop(1, `rgba(${s.band.rgb}, 0)`);
       ctx.fillStyle = hl;
       ctx.beginPath();
-      ctx.arc(lx - 2, ly, 18, 0, Math.PI * 2);
+      ctx.arc(lx - 2, ly, 20, 0, Math.PI * 2);
       ctx.fill();
+
       // solid dot
       ctx.beginPath();
       ctx.arc(lx - 2, ly, 3.6, 0, Math.PI * 2);
       ctx.fillStyle = line;
       ctx.shadowColor = line;
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 16;
       ctx.fill();
       ctx.shadowBlur = 0;
     }
-
-    /* ---------- react to 3D alerts ---------- */
-    document.addEventListener('tek:spindle-alert', (e) => {
-      const now = performance.now() / 1000;
-      if (e && e.detail && e.detail.spindle && spindleEl) {
-        s.spindle = e.detail.spindle;
-        spindleEl.textContent = 'Spindle ' + s.spindle;
-      }
-      // ignore if we just triggered one
-      if (now - s.lastAlertAt < 3) return;
-      const kind = (e && e.detail && e.detail.type === 'stuck') ? 'stuck' : 'break';
-      s.lastKind = kind;
-      s.phase = kind;
-      s.phaseT = 0;
-      s.breakFor = kind === 'stuck' ? 2.8 + Math.random() * 1.2 : 2.2 + Math.random() * 1.4;
-      s.lastAlertAt = now;
-      flashDot(kind);
-      wiggleIcons();
-      if (toastEl) {
-        toastEl.textContent = kind === 'stuck' ? '⚠ Spindle stuck — torque high' : '⚠ Yarn break detected';
-      }
-    });
 
     /* ---------- main loop ---------- */
     let last = performance.now();
     let acc = 0;
     const STEP = 0.36;
 
+    // initial band
+    applyBand(BANDS[0]);
+
     function frame(now) {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       acc += dt;
-      s.phaseT += dt;
+      s.holdT += dt;
 
-      const prevPhase = s.phase;
-
-      if (s.phase === 'run') {
-        s.rpm += (RPM_IDLE - s.rpm) * 0.18 + (Math.random() - 0.5) * 90;
-        s.rpm = Math.max(17700, Math.min(18700, s.rpm));
-        s.eff += (EFF_IDLE - s.eff) * 0.14 + (Math.random() - 0.5) * 0.7;
-        s.eff = Math.max(94.5, Math.min(99.7, s.eff));
-        s.ten += (TEN_IDLE - s.ten) * 0.18 + (Math.random() - 0.5) * 0.06;
-        s.ten = Math.max(3.5, Math.min(4.7, s.ten));
-        s.status = 'Running';
-
-        // self-trigger a new alert even if 3D is silent (e.g. no WebGL)
-        if (s.phaseT > s.nextBreak) {
-          const kind = Math.random() < 0.55 ? 'break' : 'stuck';
-          s.lastKind = kind;
-          s.phase = kind;
-          s.phaseT = 0;
-          s.breakFor = kind === 'stuck' ? 2.8 + Math.random() * 1.2 : 2.2 + Math.random() * 1.4;
-          s.spindle = 100 + Math.floor(Math.random() * 900);
-          s.lastAlertAt = performance.now() / 1000;
-          if (spindleEl) spindleEl.textContent = 'Spindle ' + s.spindle;
-          flashDot(kind);
-          wiggleIcons();
-          if (toastEl) {
-            toastEl.textContent = kind === 'stuck' ? '⚠ Spindle stuck — torque high' : '⚠ Yarn break detected';
-          }
-        }
-      } else if (s.phase === 'break') {
-        s.rpm *= 0.80; s.eff *= 0.80; s.ten *= 0.78;
-        if (s.rpm < 40)  s.rpm = 0;
-        if (s.eff < 0.6) s.eff = 0;
-        if (s.ten < 0.06) s.ten = 0;
-        s.status = 'Yarn break';
-        if (s.phaseT > s.breakFor) {
-          s.phase = 'recover';
-          s.phaseT = 0;
-          s.recoveryTo = RPM_IDLE;
-        }
-      } else if (s.phase === 'stuck') {
-        // slow collapse to the stuck targets; tension rises
-        s.rpm += (RPM_STUCK - s.rpm) * 0.10;
-        s.eff += (EFF_STUCK - s.eff) * 0.10;
-        s.ten += (TEN_STUCK - s.ten) * 0.10;
-        // small jitter to feel alive
-        s.rpm += (Math.random() - 0.5) * 60;
-        s.ten += (Math.random() - 0.5) * 0.08;
-        s.status = 'Spindle stuck';
-        if (s.phaseT > s.breakFor) {
-          s.phase = 'recover';
-          s.phaseT = 0;
-          s.recoveryTo = RPM_IDLE;
-        }
-      } else {
-        // recover
-        s.rpm += (RPM_IDLE - s.rpm) * 0.07;
-        s.eff += (EFF_IDLE - s.eff) * 0.07;
-        s.ten += (TEN_IDLE - s.ten) * 0.07;
-        s.status = 'Recovering';
-        if (s.eff > 97.6) {
-          s.phase = 'run';
-          s.phaseT = 0;
-          s.nextBreak = 6 + Math.random() * 6;
-        }
+      // every ~3s, jump to a new random band
+      if (s.holdT >= s.nextSwitch) {
+        s.holdT = 0;
+        s.nextSwitch = 2.8 + Math.random() * 1.4; // 2.8–4.2s
+        applyBand(pickBand(s.band.key));
       }
 
-      // state-change animation triggers
-      if (s.phase !== prevPhase) {
-        bump(rpmWrap); bump(effWrap); bump(tenWrap);
-      }
+      // lerp efficiency toward target
+      s.eff += (s.effTarget - s.eff) * Math.min(1, dt * 3.5);
+
+      // derive RPM and tension from efficiency
+      const e = s.eff;
+      // 100% → 18800 rpm ; 0% → 500 rpm
+      const rpmTarget = 500 + (e / 100) * 18300;
+      // 100% → 4.0 cN ; 0% → 9.0 cN
+      const tenTarget = 4.0 + (1 - e / 100) * 5.0;
+
+      s.rpm += (rpmTarget - s.rpm) * Math.min(1, dt * 3.5);
+      s.ten += (tenTarget - s.ten) * Math.min(1, dt * 3.5);
+
+      // tiny jitter for realism
+      s.rpm += (Math.random() - 0.5) * 30;
+      s.ten += (Math.random() - 0.5) * 0.03;
+
+      // occasional small bump
       if (Math.random() < 0.0012) {
         const pick = [rpmWrap, effWrap, tenWrap][Math.floor(Math.random() * 3)];
         bump(pick);
       }
 
-      // update UI
+      // paint values
       if (rpmEl) rpmEl.textContent = Math.round(s.rpm).toLocaleString('en-US');
       if (effEl) effEl.textContent = s.eff.toFixed(1);
       if (tenEl) tenEl.textContent = s.ten.toFixed(2);
-      if (statusText) statusText.textContent = s.status;
 
-      const isBreak = s.phase === 'break';
-      const isStuck = s.phase === 'stuck';
-      panel.classList.toggle('is-break', isBreak);
-      panel.classList.toggle('is-stuck', isStuck);
-      if (statusEl) {
-        statusEl.classList.toggle('is-break', isBreak);
-        statusEl.classList.toggle('is-stuck', isStuck);
+      // status label
+      const statusIcon = statusEl && statusEl.querySelector('svg path');
+      if (statusIcon) {
+        // change icon: check for green, warning triangle for others
+        if (s.band.key === 'green') statusIcon.setAttribute('d', 'M20 6 9 17l-5-5');
+        else if (s.band.key === 'yellow') statusIcon.setAttribute('d', 'M12 9v4M12 17h.01M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6A2 2 0 0 0 22 18L13.7 3.9a2 2 0 0 0-3.4 0z');
+        else if (s.band.key === 'blue') statusIcon.setAttribute('d', 'M12 8v4M12 16h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z');
+        else statusIcon.setAttribute('d', 'M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6A2 2 0 0 0 22 18L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01');
       }
 
-      // push a sample into the sparkline
+      // push sample into sparkline
       while (acc >= STEP) {
         acc -= STEP;
         const jitter = (Math.random() - 0.5) * 1.3;
@@ -574,7 +520,7 @@
     new ResizeObserver(() => { fit(); draw(); }).observe(canvas);
   }
 
-  /* ---------- helpers ---------- */
+  /* helpers */
   function splitWords(el) {
     const words = [];
     (function walk(node) {

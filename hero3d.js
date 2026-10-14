@@ -1,30 +1,28 @@
 /* ============================================================
    TEKNOMEN — 3D hero
-   A section of a ring spinning frame. Each spindle can be in
-   one of THREE LED states, matching the dashboard panel:
+   A section of a ring spinning frame. The spindle LEDs and the
+   spin rate follow the efficiency band dispatched by the
+   dashboard via the 'tek:eff-state' event:
 
-     GREEN  = running   → cop spins normally, thread intact
-     RED    = yarn break→ cop frozen, thread gone
-     BLUE   = stuck     → cop barely turning, thread intact
-                          but wobbling, tension off
+     green  → 95-100% : full speed, green LEDs
+     blue   → 70-80%  : medium speed, blue LEDs
+     yellow → 40-65%  : slow speed, yellow LEDs
+     red    → 0-20%   : near stop, red LEDs, thread hidden on
+                        the focus spindle
 
-   The dashboard reacts to the 'tek:spindle-alert' event which
-   now carries a `type` field: 'break' | 'stuck'.
+   One spindle is chosen as the "focus" and gets a bigger glow
+   so the eye has somewhere to land.
 
    Safe boot: init only runs once #stage3d exists in the DOM.
 ============================================================ */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-/* ------------------------------------------------------------
-   Safe boot
-   ------------------------------------------------------------ */
 function boot() {
   const el = document.getElementById('stage3d');
   if (el) { init(el); return true; }
   return false;
 }
-
 if (!boot()) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once: true });
@@ -68,7 +66,7 @@ function init(stage) {
   scene.add(rimCyan);
   scene.add(new THREE.HemisphereLight(0xcfd8ff, 0x0a2540, 0.45));
 
-  /* ---------- materials ---------- */
+  /* materials */
   const yarnTex = makeYarnTexture();
   const M = {
     steel: new THREE.MeshStandardMaterial({ color: 0xd3d8dc, metalness: 0.9, roughness: 0.28 }),
@@ -83,7 +81,6 @@ function init(stage) {
     sensorBar: new THREE.MeshPhysicalMaterial({ color: 0xdfe8ee, roughness: 0.15, transmission: 0.6, thickness: 0.3, transparent: true, opacity: 0.7 }),
   };
 
-  /* ---------- geometry ---------- */
   const G = {
     whorl: new THREE.CylinderGeometry(0.12, 0.14, 0.2, 40),
     collar: new THREE.CylinderGeometry(0.16, 0.16, 0.04, 40),
@@ -104,7 +101,6 @@ function init(stage) {
   const machine = new THREE.Group();
   scene.add(machine);
 
-  /* frame, rails and rollers */
   const LEN = 6.6;
   addMesh(new THREE.BoxGeometry(LEN, 0.5, 0.7), M.frame, 0, -0.36, -0.05);
   addMesh(new THREE.BoxGeometry(LEN, 0.08, 0.86), M.steel, 0, -0.07, 0);
@@ -117,7 +113,7 @@ function init(stage) {
   const sensor = addMesh(new THREE.CylinderGeometry(0.05, 0.05, LEN, 24), M.sensorBar, 0, 0.05, 0.42);
   sensor.rotation.z = Math.PI / 2;
 
-  /* ---------- spindles ---------- */
+  /* spindles */
   const COUNT = 10, GAP = 0.62;
   const spindles = [];
   for (let i = 0; i < COUNT; i++) {
@@ -135,7 +131,6 @@ function init(stage) {
     const ring = mesh(G.ring, M.steel); ring.rotation.x = Math.PI / 2; ring.position.y = 0.76;
     const guide = mesh(G.guide, M.steel); guide.rotation.x = Math.PI / 2; guide.position.set(0, 2.08, -0.02);
 
-    // yarn from cop tip up through the guide to the rollers
     const threadGeo = new THREE.CylinderGeometry(0.005, 0.005, 1, 6);
     threadGeo.translate(0, 0.5, 0);
     const thread = new THREE.Mesh(threadGeo, M.thread);
@@ -144,46 +139,26 @@ function init(stage) {
     thread.scale.y = from.distanceTo(to);
     thread.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize());
 
-    // LED + glow layers
-    const ledMat = new THREE.MeshStandardMaterial({
-      color: 0x0b3d2c,
-      emissive: 0x19d38f,
-      emissiveIntensity: 1.4,
-    });
-    const led = new THREE.Mesh(G.led, ledMat);
-    led.position.set(0, 0.05, 0.47);
+    const ledMat = new THREE.MeshStandardMaterial({ color: 0x0b3d2c, emissive: 0x19d38f, emissiveIntensity: 1.4 });
+    const led = new THREE.Mesh(G.led, ledMat); led.position.set(0, 0.05, 0.47);
 
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: glowTex,
-      color: 0x19d38f,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      opacity: 0.9,
+      map: glowTex, color: 0x19d38f, transparent: true,
+      blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.9,
     }));
-    glow.scale.set(0.42, 0.42, 1);
-    glow.position.set(0, 0.05, 0.50);
+    glow.scale.set(0.42, 0.42, 1); glow.position.set(0, 0.05, 0.50);
 
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: glowTex,
-      color: 0xffffff,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      opacity: 0,
+      map: glowTex, color: 0xffffff, transparent: true,
+      blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0,
     }));
-    halo.scale.set(1.4, 1.4, 1);
-    halo.position.set(0, 0.05, 0.52);
+    halo.scale.set(1.4, 1.4, 1); halo.position.set(0, 0.05, 0.52);
 
     const alertRing = new THREE.Mesh(
       new THREE.RingGeometry(0.20, 0.28, 48),
       new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
+        color: 0xffffff, transparent: true, opacity: 0,
+        side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
       })
     );
     alertRing.rotation.x = -Math.PI / 2;
@@ -206,10 +181,11 @@ function init(stage) {
       speed: 7 + Math.random() * 1.5,
       born: 0.15 + i * 0.07,
       angle: 0,
+      currentRate: 7,
     });
   }
 
-  /* floor + contact shadow */
+  /* floor + shadow */
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(LEN + 5, 6), new THREE.MeshStandardMaterial({
     color: 0x0d1d3a, metalness: 0.6, roughness: 0.32, transparent: true, alphaMap: makeFadeTexture(), depthWrite: false }));
   floor.rotation.x = -Math.PI / 2;
@@ -233,14 +209,14 @@ function init(stage) {
   const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xbfeeff, size: 0.024, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
   machine.add(dust);
 
-  /* alert light that follows the active spindle */
-  const alertLight = new THREE.PointLight(0xff4a2a, 0, 2.6, 2);
-  alertLight.position.set(0, 0.25, 0.7);
-  machine.add(alertLight);
+  /* focus point light */
+  const focusLight = new THREE.PointLight(0x19d38f, 0, 2.6, 2);
+  focusLight.position.set(0, 0.25, 0.7);
+  machine.add(focusLight);
 
   machine.rotation.y = -0.5;
 
-  /* ---------- interaction ---------- */
+  /* pointer */
   const pointer = { x: 0, y: 0 }, eased = { x: 0, y: 0 };
   const hero = stage.closest('.hero') || stage;
   hero.addEventListener('pointermove', (e) => {
@@ -250,21 +226,32 @@ function init(stage) {
   });
   hero.addEventListener('pointerleave', () => { pointer.x = 0; pointer.y = 0; });
 
-  /* ---------- state ---------- */
-  let alertIdx  = 3;
-  let alertKind = 'break';       // 'break' | 'stuck'
-  let nextSwitch = 3.2;
+  /* state */
+  const STATES = {
+    green:  { color: new THREE.Color(0x19d38f), speedMul: 1.00, thread: true  },
+    blue:   { color: new THREE.Color(0x4a9dff), speedMul: 0.55, thread: true  },
+    yellow: { color: new THREE.Color(0xf5c542), speedMul: 0.25, thread: true  },
+    red:    { color: new THREE.Color(0xff3b1f), speedMul: 0.04, thread: false },
+  };
+  let state = 'green';
+  let focusIdx = 3;
+  let nextFocus = 4;
+
+  document.addEventListener('tek:eff-state', (e) => {
+    const s = e && e.detail && e.detail.state;
+    if (STATES[s]) state = s;
+  });
+
   const clock = new THREE.Clock();
   let visible = true, running = false;
+  let lastT = 0;
 
-  /* ---------- camera ---------- */
   let baseDist = 10;
   function placeCamera(sp) {
     camera.position.set(0.3 - sp * 0.6, 2.3 + sp * 1.4, baseDist * (1 - sp * 0.32));
     camera.lookAt(lookAt);
   }
 
-  /* ---------- sizing ---------- */
   function resize() {
     const w = stage.clientWidth, h = stage.clientHeight;
     if (!w || !h) return;
@@ -273,102 +260,97 @@ function init(stage) {
     baseDist = 10.2 * Math.max(1, 1.25 / camera.aspect);
     placeCamera(0);
     camera.updateProjectionMatrix();
-    if (reduced) render(10, 0);
+    if (reduced) render(10, 0.016);
   }
   new ResizeObserver(resize).observe(stage);
   resize();
 
-  /* ---------- colours per state ---------- */
-  const C_RUN   = new THREE.Color(0x19d38f); // green
-  const C_BREAK = new THREE.Color(0xff3b1f); // red
-  const C_STUCK = new THREE.Color(0x4a9dff); // blue
-
-  /* ---------- render ---------- */
-  let lastT = 0;
   function render(t, dt) {
+    const S = STATES[state];
+
     spindles.forEach((s, i) => {
       const k = Math.min(1, Math.max(0, (t - s.born) / 0.9));
       const e = 1 + 2.70158 * Math.pow(k - 1, 3) + 1.70158 * Math.pow(k - 1, 2);
       s.group.scale.y = Math.max(0.001, e);
 
-      const isAlert = i === alertIdx && t > 1.4;
-      const isBreak = isAlert && alertKind === 'break';
-      const isStuck = isAlert && alertKind === 'stuck';
-      const isRun   = !isBreak && !isStuck;
-
-      // spin behaviour
-      let spinRate;
-      if (isBreak) spinRate = 0;                 // frozen
-      else if (isStuck) spinRate = s.speed * 0.08; // barely turning
-      else spinRate = s.speed;
-      s.angle += spinRate * dt;
+      // smooth the spin rate for organic transitions
+      const target = s.speed * S.speedMul;
+      s.currentRate += (target - s.currentRate) * 0.06;
+      s.angle += s.currentRate * dt;
       s.rot.rotation.y = s.angle;
 
-      // thread behaviour
-      s.thread.visible = !isBreak;
+      const isFocus = i === focusIdx;
+
+      // thread hidden only in red state, on the focus spindle
+      s.thread.visible = !(state === 'red' && isFocus);
 
       // pulses
-      const pulse = 0.5 + 0.5 * Math.sin(t * 9);       // fast alert pulse
-      const slow  = 0.5 + 0.5 * Math.sin(t * 2.4 + i); // stuck pulse
-      const soft  = 0.5 + 0.5 * Math.sin(t * 2 + i);   // idle breathing
+      const soft = 0.5 + 0.5 * Math.sin(t * 2 + i);
+      const fast = 0.5 + 0.5 * Math.sin(t * 9);
 
-      // colour + intensity
-      let color, intensity, glowOp, glowScale, haloOp, haloScale, ringOp, ringScale;
-      if (isBreak) {
-        color = C_BREAK;
-        intensity = 5.5 + pulse * 4.5;
-        glowOp = 0.90 + pulse * 0.10;
-        glowScale = 0.85 + pulse * 0.55;
-        haloOp = 0.35 + pulse * 0.45;
-        haloScale = 1.7 + pulse * 1.3;
-        ringOp = 0.45 + pulse * 0.45;
-        ringScale = 0.85 + pulse * 0.70;
-      } else if (isStuck) {
-        color = C_STUCK;
-        intensity = 3.2 + slow * 2.0;
-        glowOp = 0.75 + slow * 0.20;
-        glowScale = 0.65 + slow * 0.30;
-        haloOp = 0.22 + slow * 0.30;
-        haloScale = 1.3 + slow * 0.7;
-        ringOp = 0.30 + slow * 0.35;
-        ringScale = 0.75 + slow * 0.45;
-      } else {
-        color = C_RUN;
-        intensity = 1.1 + soft * 0.5;
-        glowOp = 0.42 + soft * 0.16;
-        glowScale = 0.42;
-        haloOp = 0;
-        haloScale = 1.4;
+      let intensity, glowOp, glowScale, haloOp, haloScale, ringOp, ringScale;
+      if (state === 'green') {
+        intensity = 1.2 + soft * 0.5;
+        glowOp = 0.44 + soft * 0.16;
+        glowScale = isFocus ? 0.60 + soft * 0.10 : 0.42;
+        haloOp = isFocus ? 0.10 : 0;
+        haloScale = isFocus ? 1.1 : 1.4;
         ringOp = 0;
         ringScale = 1;
+      } else if (state === 'blue') {
+        intensity = 2.4 + soft * 1.2;
+        glowOp = 0.62 + soft * 0.18;
+        glowScale = isFocus ? 0.85 + soft * 0.15 : 0.62;
+        haloOp = isFocus ? 0.18 + soft * 0.10 : 0.05;
+        haloScale = isFocus ? 1.4 : 1.2;
+        ringOp = isFocus ? 0.20 + soft * 0.12 : 0;
+        ringScale = 0.85;
+      } else if (state === 'yellow') {
+        intensity = 3.6 + soft * 1.8;
+        glowOp = 0.78 + soft * 0.16;
+        glowScale = isFocus ? 1.0 + soft * 0.20 : 0.78;
+        haloOp = isFocus ? 0.30 + soft * 0.20 : 0.10;
+        haloScale = isFocus ? 1.7 : 1.4;
+        ringOp = isFocus ? 0.32 + soft * 0.18 : 0;
+        ringScale = 1.0;
+      } else { // red
+        intensity = 5.5 + fast * 4.5;
+        glowOp = 0.90 + fast * 0.10;
+        glowScale = isFocus ? 0.95 + fast * 0.55 : 0.75 + fast * 0.20;
+        haloOp = isFocus ? 0.40 + fast * 0.45 : 0.15 + fast * 0.12;
+        haloScale = isFocus ? 2.0 + fast * 1.3 : 1.4 + fast * 0.5;
+        ringOp = isFocus ? 0.45 + fast * 0.45 : 0.18 + fast * 0.15;
+        ringScale = isFocus ? 0.85 + fast * 0.70 : 0.75;
       }
 
-      s.led.emissive.copy(color);
+      s.led.emissive.copy(S.color);
       s.led.emissiveIntensity = intensity;
 
-      s.glow.color.copy(color);
+      s.glow.color.copy(S.color);
       s.glow.opacity = glowOp;
       s.glowSprite.scale.setScalar(glowScale);
 
-      s.halo.color.copy(color);
+      s.halo.color.copy(S.color);
       s.halo.opacity = haloOp;
       s.haloSprite.scale.setScalar(haloScale);
 
-      s.alertRing.material.color.copy(color);
+      s.alertRing.material.color.copy(S.color);
       s.alertRing.material.opacity = ringOp;
       s.alertRing.scale.setScalar(ringScale);
     });
 
-    // point light follows the alert spindle; colour matches the state
-    const active = spindles[alertIdx];
-    const aX = active.group.position.x;
-    alertLight.position.x += (aX - alertLight.position.x) * 0.2;
-    if (t > 1.4) {
-      const lightCol = alertKind === 'stuck' ? 0x4a9dff : 0xff4a2a;
-      alertLight.color.setHex(lightCol);
-      alertLight.intensity = (alertKind === 'stuck' ? 3.2 : 4.5) + Math.sin(t * 9) * 2;
+    // focus light follows the focus spindle
+    const focus = spindles[focusIdx];
+    focusLight.position.x += (focus.group.position.x - focusLight.position.x) * 0.2;
+    focusLight.color.copy(S.color);
+    if (state === 'green') {
+      focusLight.intensity = 0.6;
+    } else if (state === 'blue') {
+      focusLight.intensity = 1.2 + Math.sin(t * 3) * 0.4;
+    } else if (state === 'yellow') {
+      focusLight.intensity = 2.0 + Math.sin(t * 4) * 0.7;
     } else {
-      alertLight.intensity = 0;
+      focusLight.intensity = 4.5 + Math.sin(t * 9) * 2;
     }
 
     // dust
@@ -380,7 +362,7 @@ function init(stage) {
     }
     dustGeo.attributes.position.needsUpdate = true;
 
-    // camera motion + scroll
+    // camera
     eased.x += (pointer.x - eased.x) * 0.05;
     eased.y += (pointer.y - eased.y) * 0.05;
     const sp = window.__tekHero || 0;
@@ -388,7 +370,11 @@ function init(stage) {
     machine.rotation.x = eased.y * 0.06 + sp * 0.22;
     machine.position.y = Math.sin(t * 0.8) * 0.03 - sp * 0.35;
     placeCamera(sp);
-    roller1.rotation.x = t * 2; roller2.rotation.x = -t * 2.4;
+
+    // rollers slow down with the state
+    const rollMul = STATES[state].speedMul;
+    roller1.rotation.x += dt * 2 * rollMul * 60;
+    roller2.rotation.x -= dt * 2.4 * rollMul * 60;
 
     renderer.render(scene, camera);
   }
@@ -400,25 +386,18 @@ function init(stage) {
     const dt = Math.min(0.05, t - lastT);
     lastT = t;
 
-    if (t > nextSwitch) {
-      let n; do { n = Math.floor(Math.random() * COUNT); } while (n === alertIdx);
-      alertIdx = n;
-      // ~55% break, ~45% stuck
-      alertKind = Math.random() < 0.55 ? 'break' : 'stuck';
-      nextSwitch = t + 3.2 + Math.random() * 2;
-      document.dispatchEvent(new CustomEvent('tek:spindle-alert', {
-        detail: {
-          spindle: 100 + n * 7 + Math.floor(Math.random() * 6),
-          type: alertKind,
-        },
-      }));
+    // pick a new focus spindle every few seconds
+    if (t > nextFocus) {
+      let n; do { n = Math.floor(Math.random() * COUNT); } while (n === focusIdx);
+      focusIdx = n;
+      nextFocus = t + 3 + Math.random() * 3;
     }
 
     render(t, dt);
     requestAnimationFrame(loop);
   }
 
-  if (reduced) { render(10, 0); return; }
+  if (reduced) { render(10, 0.016); return; }
 
   new IntersectionObserver(([en]) => {
     visible = en.isIntersecting;
@@ -429,7 +408,7 @@ function init(stage) {
   function addMesh(g, m, x, y, z) { const o = mesh(g, m); o.position.set(x, y, z); machine.add(o); return o; }
 }
 
-/* ---------- texture helpers ---------- */
+/* texture helpers */
 function makeYarnTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;

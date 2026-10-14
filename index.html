@@ -15,23 +15,26 @@
 <link rel="stylesheet" href="style.css">
 <style>
 /* ============================================================
-   HERO — a touch taller so the 3D stage and telemetry breathe
+   HERO — a touch taller
    ============================================================ */
-.hero {
-  padding-bottom: clamp(60px, 12vh, 150px) !important;
-}
+.hero { padding-bottom: clamp(60px, 12vh, 150px) !important; }
 @media (min-width: 900px) {
   .hero { min-height: 108vh !important; }
   .hero-grid { padding-top: clamp(28px, 5vh, 70px) !important; }
 }
 
 /* ============================================================
-   HERO TELEMETRY DASHBOARD — sits at the bottom of the hero-text
-   column, i.e. bottom-left of the hero.
+   HERO TELEMETRY DASHBOARD — 4-band efficiency colour system
+   --st   = state colour
+   --st-rgb = same colour as "r,g,b" so we can do rgba()
    ============================================================ */
 @property --dash-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
 
 .hero-dash {
+  /* default = green band */
+  --st: #19d38f;
+  --st-rgb: 25, 211, 143;
+
   position: relative;
   width: 100%;
   max-width: 470px;
@@ -41,20 +44,26 @@
   background: linear-gradient(180deg, rgba(11,24,48,.88) 0%, rgba(7,16,34,.94) 100%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(130,180,255,.18);
+  border: 1px solid rgba(var(--st-rgb), .30);
   box-shadow:
     0 22px 60px rgba(2,10,30,.55),
+    0 0 0 1px rgba(var(--st-rgb), .10),
     inset 0 1px 0 rgba(255,255,255,.07);
   color: #e9f0ff;
   z-index: 4;
   font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   font-variant-numeric: tabular-nums;
-  transition: border-color .35s ease, box-shadow .35s ease;
+  transition: border-color .5s ease, box-shadow .5s ease;
   isolation: isolate;
-  overflow: visible;
 }
 
-/* rotating conic-gradient border */
+/* band colours */
+.hero-dash.is-eff-green  { --st: #19d38f; --st-rgb: 25, 211, 143; }
+.hero-dash.is-eff-blue   { --st: #4a9dff; --st-rgb: 74, 157, 255; }
+.hero-dash.is-eff-yellow { --st: #f5c542; --st-rgb: 245, 197, 66; }
+.hero-dash.is-eff-red    { --st: #ff3b1f; --st-rgb: 255, 59, 31; }
+
+/* rotating conic border — colour follows the state */
 .hero-dash::before {
   content: '';
   position: absolute;
@@ -62,54 +71,25 @@
   border-radius: inherit;
   padding: 1px;
   background: conic-gradient(from var(--dash-angle, 0deg),
-    rgba(130,180,255,0)    0deg,
-    rgba(130,180,255,.7)  60deg,
-    rgba(130,180,255,0)  140deg,
-    rgba(130,180,255,0)  360deg);
+    rgba(var(--st-rgb), 0)    0deg,
+    rgba(var(--st-rgb), .75) 60deg,
+    rgba(var(--st-rgb), 0)   140deg,
+    rgba(var(--st-rgb), 0)   360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
   animation: dashSpin 7s linear infinite;
   pointer-events: none;
   z-index: 2;
+  transition: background .4s ease;
 }
 @keyframes dashSpin { to { --dash-angle: 360deg; } }
 
-/* state: yarn break (red) */
-.hero-dash.is-break {
-  border-color: rgba(255,80,50,.65);
-  box-shadow:
-    0 22px 60px rgba(255,60,30,.32),
-    0 0 0 1px rgba(255,80,50,.28),
-    inset 0 1px 0 rgba(255,255,255,.07);
-}
-.hero-dash.is-break::before {
-  background: conic-gradient(from var(--dash-angle, 0deg),
-    rgba(255,80,50,0)    0deg,
-    rgba(255,80,50,.95) 60deg,
-    rgba(255,80,50,0)  140deg,
-    rgba(255,80,50,0)  360deg);
-  animation-duration: 1.6s;
-}
+.hero-dash.is-eff-blue::before   { animation-duration: 5s; }
+.hero-dash.is-eff-yellow::before { animation-duration: 3.4s; }
+.hero-dash.is-eff-red::before    { animation-duration: 1.6s; }
 
-/* state: stuck (blue) */
-.hero-dash.is-stuck {
-  border-color: rgba(80,160,255,.65);
-  box-shadow:
-    0 22px 60px rgba(60,140,255,.30),
-    0 0 0 1px rgba(80,160,255,.28),
-    inset 0 1px 0 rgba(255,255,255,.07);
-}
-.hero-dash.is-stuck::before {
-  background: conic-gradient(from var(--dash-angle, 0deg),
-    rgba(80,160,255,0)    0deg,
-    rgba(80,160,255,.95) 60deg,
-    rgba(80,160,255,0)  140deg,
-    rgba(80,160,255,0)  360deg);
-  animation-duration: 2.6s;
-}
-
-/* slide-in toast above the panel */
+/* slide-in toast */
 .hd-toast {
   position: absolute;
   left: 0;
@@ -117,31 +97,25 @@
   margin-bottom: 8px;
   padding: 5px 12px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255,59,31,.96), rgba(200,30,15,.96));
+  background: linear-gradient(180deg, rgba(var(--st-rgb), .96), rgba(var(--st-rgb), .82));
   color: #fff;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
   white-space: nowrap;
-  box-shadow: 0 10px 26px rgba(255,60,30,.45);
+  box-shadow: 0 10px 26px rgba(var(--st-rgb), .45);
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px) scale(.94);
-  transition: opacity .3s ease, transform .4s cubic-bezier(.2,.9,.3,1.35), background .3s;
+  transition: opacity .3s ease, transform .4s cubic-bezier(.2,.9,.3,1.35), background .4s;
   z-index: 3;
 }
-.hero-dash.is-break .hd-toast {
+.hero-dash.is-eff-blue .hd-toast,
+.hero-dash.is-eff-yellow .hd-toast,
+.hero-dash.is-eff-red .hd-toast {
   opacity: 1;
   transform: translateY(0) scale(1);
-  background: linear-gradient(180deg, rgba(255,59,31,.96), rgba(200,30,15,.96));
-  box-shadow: 0 10px 26px rgba(255,60,30,.45);
-}
-.hero-dash.is-stuck .hd-toast {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  background: linear-gradient(180deg, rgba(70,150,255,.96), rgba(30,90,200,.96));
-  box-shadow: 0 10px 26px rgba(60,140,255,.45);
 }
 
 .hd-head {
@@ -150,24 +124,22 @@
   font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
   color: #8fb0e0;
 }
-.hd-head .hd-broadcast {
+.hd-broadcast {
   width: 12px; height: 12px;
   flex: none;
   color: #8fb0e0;
   animation: hdBroadcast 2.6s ease-in-out infinite;
 }
-@keyframes hdBroadcast {
-  0%, 100% { opacity: .55; }
-  50%      { opacity: 1; }
-}
+@keyframes hdBroadcast { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
 .hd-dot {
   position: relative;
   width: 7px; height: 7px; border-radius: 50%;
-  background: #19d38f;
-  box-shadow: 0 0 10px #19d38f;
+  background: var(--st);
+  box-shadow: 0 0 10px var(--st);
   animation: hdPulse 1.8s ease-in-out infinite;
   flex: none;
-  transition: background .3s, box-shadow .3s;
+  transition: background .4s, box-shadow .4s;
 }
 .hd-dot::after {
   content: '';
@@ -178,44 +150,31 @@
   background: inherit;
   animation: hdRing 1.8s ease-out infinite;
 }
-.hero-dash.is-break .hd-dot,
-.hero-dash.is-break .hd-dot::after {
-  background: #ff3b1f;
-  box-shadow: 0 0 16px #ff3b1f, 0 0 32px rgba(255,59,31,.6);
-}
-.hero-dash.is-stuck .hd-dot,
-.hero-dash.is-stuck .hd-dot::after {
-  background: #4a9dff;
-  box-shadow: 0 0 16px #4a9dff, 0 0 32px rgba(74,157,255,.6);
-}
-@keyframes hdPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%      { transform: scale(1.35); opacity: .65; }
-}
-@keyframes hdRing {
-  0%   { transform: scale(1); opacity: .85; }
-  100% { transform: scale(3.6); opacity: 0; }
-}
+@keyframes hdPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .65; } }
+@keyframes hdRing  { 0% { transform: scale(1); opacity: .85; } 100% { transform: scale(3.6); opacity: 0; } }
+
 .hd-title { font-weight: 600; color: #dbe7ff; }
 .hd-frame { margin-left: auto; color: #7fa0d0; white-space: nowrap; }
 
-.hd-metrics {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  margin-bottom: 10px;
-}
+.hd-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+
 .hd-metric {
   display: flex; flex-direction: column; gap: 4px;
   padding: 8px 9px; border-radius: 10px;
   background: rgba(255,255,255,.045);
   border: 1px solid rgba(255,255,255,.055);
   min-width: 0;
-  transition: background .3s, border-color .3s;
+  transition: background .4s, border-color .4s;
+}
+.hero-dash:not(.is-eff-green) .hd-metric {
+  background: rgba(var(--st-rgb), .07);
+  border-color: rgba(var(--st-rgb), .18);
 }
 .hd-label {
   display: flex; align-items: center; gap: 4px;
   font-size: 9px; letter-spacing: .07em; text-transform: uppercase;
   color: #7e9ccb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  transition: color .3s;
+  transition: color .4s;
 }
 .hd-ico {
   width: 11px; height: 11px;
@@ -232,20 +191,25 @@
   font-size: 14.5px; font-weight: 500; color: #eaf4ff;
   display: flex; align-items: baseline; gap: 3px;
   line-height: 1.1; white-space: nowrap;
-  transition: color .3s ease, text-shadow .3s ease;
+  transition: color .4s ease, text-shadow .4s ease;
 }
-.hd-value small { font-size: 9px; color: #7e9ccb; font-weight: 400; letter-spacing: .04em; }
+.hd-value small { font-size: 9px; color: #7e9ccb; font-weight: 400; letter-spacing: .04em; transition: color .4s; }
 
-/* state-colored metric appearance */
-.hero-dash.is-break .hd-label,
-.hero-dash.is-break .hd-value { color: #ff8b73; }
-.hero-dash.is-stuck .hd-label,
-.hero-dash.is-stuck .hd-value { color: #7eb9ff; }
+/* label + value take the state colour */
+.hero-dash.is-eff-blue   .hd-label,
+.hero-dash.is-eff-blue   .hd-value,
+.hero-dash.is-eff-blue   .hd-value small { color: var(--st); }
+.hero-dash.is-eff-yellow .hd-label,
+.hero-dash.is-eff-yellow .hd-value,
+.hero-dash.is-eff-yellow .hd-value small { color: var(--st); }
+.hero-dash.is-eff-red    .hd-label,
+.hero-dash.is-eff-red    .hd-value,
+.hero-dash.is-eff-red    .hd-value small { color: var(--st); }
 
-/* value bump flash on significant change */
-.hd-value.is-bump { animation: hdBump .75s ease-out; }
+/* bump flash on state change */
+.hd-value.is-bump { animation: hdBump .8s ease-out; }
 @keyframes hdBump {
-  0%   { color: #ffffff; text-shadow: 0 0 18px rgba(120,220,255,.95); transform: translateY(-2px); }
+  0%   { color: #ffffff; text-shadow: 0 0 22px rgba(255,255,255,.85); transform: translateY(-2px); }
   100% { color: inherit; text-shadow: none; transform: none; }
 }
 
@@ -264,45 +228,30 @@
   border-radius: 10px; overflow: hidden;
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.05);
-  transition: border-color .3s;
+  transition: border-color .4s;
 }
-.hero-dash.is-break .hd-graph { border-color: rgba(255,80,50,.28); }
-.hero-dash.is-stuck .hd-graph { border-color: rgba(80,160,255,.28); }
+.hero-dash:not(.is-eff-green) .hd-graph { border-color: rgba(var(--st-rgb), .28); }
 .hd-graph canvas { display: block; width: 100%; height: 100%; }
 
-/* scan-line sweep across the graph */
+/* scan-line sweep — colour follows the state */
 .hd-graph::after {
   content: '';
   position: absolute; inset: 0;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(120,220,255,.10) 45%,
-    rgba(120,220,255,.22) 50%,
-    rgba(120,220,255,.10) 55%,
+    rgba(var(--st-rgb), .10) 45%,
+    rgba(var(--st-rgb), .26) 50%,
+    rgba(var(--st-rgb), .10) 55%,
     transparent 100%);
   transform: translateX(-100%);
   animation: hdScan 4.2s linear infinite;
   pointer-events: none;
   mix-blend-mode: screen;
+  transition: background .4s;
 }
-.hero-dash.is-break .hd-graph::after {
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255,90,60,.16) 45%,
-    rgba(255,90,60,.34) 50%,
-    rgba(255,90,60,.16) 55%,
-    transparent 100%);
-  animation-duration: 1.4s;
-}
-.hero-dash.is-stuck .hd-graph::after {
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(90,160,255,.16) 45%,
-    rgba(90,160,255,.34) 50%,
-    rgba(90,160,255,.16) 55%,
-    transparent 100%);
-  animation-duration: 2.2s;
-}
+.hero-dash.is-eff-blue   .hd-graph::after { animation-duration: 3.4s; }
+.hero-dash.is-eff-yellow .hd-graph::after { animation-duration: 2.4s; }
+.hero-dash.is-eff-red    .hd-graph::after { animation-duration: 1.4s; }
 @keyframes hdScan { to { transform: translateX(100%); } }
 
 .hd-graph-foot {
@@ -312,11 +261,11 @@
 }
 .hd-status {
   padding: 3px 9px; border-radius: 999px;
-  background: rgba(25,211,143,.14); color: #19d38f;
+  background: rgba(var(--st-rgb), .14); color: var(--st);
   font-weight: 600; text-transform: uppercase; font-size: 9px;
   letter-spacing: .08em;
   display: inline-flex; align-items: center; gap: 5px;
-  transition: background .3s, color .3s;
+  transition: background .4s, color .4s;
 }
 .hd-status svg {
   width: 9px; height: 9px;
@@ -327,8 +276,6 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.hd-status.is-break { background: rgba(255,59,31,.18); color: #ff6a4d; }
-.hd-status.is-stuck { background: rgba(74,157,255,.20); color: #7eb9ff; }
 
 /* spindle matrix */
 .hd-matrix {
@@ -343,41 +290,27 @@
   display: block;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: #19d38f;
-  box-shadow: 0 0 6px rgba(25,211,143,.55);
+  background: var(--st);
+  box-shadow: 0 0 6px rgba(var(--st-rgb), .55);
   opacity: .78;
   transform: scale(.6);
-  transition: background .25s, box-shadow .25s, opacity .25s, transform .25s;
+  transition: background .35s, box-shadow .35s, opacity .25s, transform .25s;
 }
-.hd-matrix.is-ready i {
-  animation: hdDotIn .55s cubic-bezier(.2,.9,.3,1.35) forwards;
-}
-@keyframes hdDotIn {
-  to { transform: scale(1); opacity: .78; }
-}
-.hd-matrix i.is-broken {
-  background: #ff3b1f;
-  box-shadow: 0 0 14px #ff3b1f, 0 0 26px rgba(255,59,31,.75);
-  opacity: 1;
+.hd-matrix.is-ready i { animation: hdDotIn .55s cubic-bezier(.2,.9,.3,1.35) forwards; }
+@keyframes hdDotIn { to { transform: scale(1); opacity: .78; } }
+
+/* pulsing "focus" dot in the matrix */
+.hd-matrix i.is-focus {
   transform: scale(1.4);
-  animation: hdBlink .55s steps(2, end) infinite;
-}
-.hd-matrix i.is-stuck {
-  background: #4a9dff;
-  box-shadow: 0 0 14px #4a9dff, 0 0 26px rgba(74,157,255,.75);
   opacity: 1;
-  transform: scale(1.4);
-  animation: hdSlow .9s ease-in-out infinite;
+  animation: hdFocus 1s ease-in-out infinite;
 }
-@keyframes hdBlink { 50% { opacity: .32; } }
-@keyframes hdSlow {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: .55; }
+@keyframes hdFocus {
+  0%, 100% { transform: scale(1.4); box-shadow: 0 0 16px rgba(var(--st-rgb), .85); }
+  50%      { transform: scale(1.7); box-shadow: 0 0 26px rgba(var(--st-rgb), 1); }
 }
 
-@media (max-width: 980px) {
-  .hero-dash { max-width: 100%; }
-}
+@media (max-width: 980px) { .hero-dash { max-width: 100%; } }
 @media (max-width: 640px) {
   .hero-dash { padding: 11px 12px 11px; margin-top: 22px; }
   .hd-metrics { gap: 5px; }
@@ -431,9 +364,9 @@
           <li>Since <strong>1992</strong></li>
         </ul>
 
-        <!-- ===== TELEMETRY DASHBOARD — bottom of the left column ===== -->
-        <div class="hero-dash hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
-          <span class="hd-toast" id="hdToast" aria-hidden="true">⚠ Yarn break detected</span>
+        <!-- ===== TELEMETRY DASHBOARD ===== -->
+        <div class="hero-dash is-eff-green hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
+          <span class="hd-toast" id="hdToast" aria-hidden="true">All spindles normal</span>
 
           <div class="hd-head">
             <svg class="hd-broadcast" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -809,35 +742,14 @@
   <!-- ============ SERVICES ============ -->
 <section class="section" id="services">
   <style>
-    .svc-feature {
-      transition: transform .35s ease, box-shadow .35s ease;
-      will-change: transform;
-    }
-    .svc-feature:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 18px 40px rgba(0,0,0,.12);
-    }
-    .svc-feature .svc-feature-img {
-      transition: transform .6s ease;
-      will-change: transform;
-    }
-    .svc-feature:hover .svc-feature-img {
-      transform: scale(1.08);
-    }
-    .svc-feature .svc-feature-title {
-      transition: color .3s ease;
-    }
-    .svc-feature:hover .svc-feature-title {
-      color: #0b63d6;
-    }
-
-    @keyframes svcFadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .svc-fade {
-      animation: svcFadeUp .7s ease both;
-    }
+    .svc-feature { transition: transform .35s ease, box-shadow .35s ease; will-change: transform; }
+    .svc-feature:hover { transform: translateY(-8px); box-shadow: 0 18px 40px rgba(0,0,0,.12); }
+    .svc-feature .svc-feature-img { transition: transform .6s ease; will-change: transform; }
+    .svc-feature:hover .svc-feature-img { transform: scale(1.08); }
+    .svc-feature .svc-feature-title { transition: color .3s ease; }
+    .svc-feature:hover .svc-feature-title { color: #0b63d6; }
+    @keyframes svcFadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    .svc-fade { animation: svcFadeUp .7s ease both; }
     .svc-fade.d1 { animation-delay: .05s; }
     .svc-fade.d2 { animation-delay: .18s; }
     .svc-fade.d3 { animation-delay: .31s; }
@@ -851,7 +763,6 @@
     </div>
 
     <div style="display:grid !important;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)) !important;gap:24px !important;margin-bottom:36px !important;">
-
       <a href="products/electronic.html" class="svc-feature svc-fade d1" style="display:flex !important;flex-direction:column !important;height:100% !important;text-decoration:none !important;background:#fff !important;border-radius:14px !important;overflow:hidden !important;box-shadow:0 4px 18px rgba(0,0,0,.06) !important;">
         <span style="display:block !important;width:100% !important;height:240px !important;overflow:hidden !important;background:#e9ecef !important;">
           <img class="svc-feature-img" src="Elec1.jpg" alt="Electronic Repair &amp; Maintenance" loading="lazy" style="display:block !important;width:100% !important;height:100% !important;object-fit:cover !important;object-position:center !important;">
@@ -869,7 +780,6 @@
           <strong class="svc-feature-title" style="display:block !important;font-size:1.15rem !important;color:#111 !important;">PCB Design &amp; Fabrication</strong>
         </span>
       </a>
-
     </div>
 
     <div class="svc-grid">
@@ -1010,7 +920,6 @@
   </section>
 
 <section>
-
   <button
     type="button"
     id="scrollTopBtn"
@@ -1038,14 +947,7 @@
     "
   >
     <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" style="display:block;">
-      <path
-        d="M12 19V5M5 12l7-7 7 7"
-        fill="none"
-        stroke="#0a2a6b"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
+      <path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="#0a2a6b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
@@ -1054,7 +956,6 @@
       function initScrollTop() {
         var btn = document.getElementById('scrollTopBtn');
         if (!btn) return;
-
         window.addEventListener('scroll', function () {
           if (window.scrollY > 300) {
             btn.style.opacity = '1';
@@ -1064,12 +965,10 @@
             btn.style.pointerEvents = 'none';
           }
         });
-
         btn.addEventListener('click', function () {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       }
-
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initScrollTop);
       } else {
@@ -1077,7 +976,6 @@
       }
     })();
   </script>
-
 </section>
 
 </main>
