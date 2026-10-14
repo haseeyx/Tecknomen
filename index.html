@@ -36,6 +36,33 @@
 }
 
 /* ============================================================
+   MOBILE ORDER: push the telemetry dashboard to the very bottom
+   of the hero, i.e. below the 3D stage — not above it.
+   `.hero-text` becomes transparent to layout so we can reorder
+   all its children against `.hero-visual` with flex `order`.
+   ============================================================ */
+@media (max-width: 900px) {
+  .hero-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+  .hero-text {
+    display: contents !important;
+  }
+  .hero-text > .pill        { order: 1; }
+  .hero-text > .hero-title  { order: 2; }
+  .hero-text > .hero-lead   { order: 3; }
+  .hero-text > .actions     { order: 4; }
+  .hero-text > .hero-proof  { order: 5; }
+
+  .hero-visual              { order: 6; margin-top: 12px; }
+
+  /* dashboard sits at the very bottom, after the 3D stage */
+  .hero-text > .hero-dash   { order: 7; margin-top: 22px; margin-bottom: 4px; }
+}
+
+/* ============================================================
    HERO TELEMETRY DASHBOARD — 4-band efficiency colour system
    --st   = state colour
    --st-rgb = same colour as "r,g,b" so we can do rgba()
