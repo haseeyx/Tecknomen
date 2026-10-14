@@ -25,6 +25,9 @@
 
 /* ============================================================
    FIX: keep hero lead / buttons / proof stats readable on scroll-up
+   GSAP fades these out on scroll-down and can leave them dim when
+   the user scrolls back up quickly. Locking opacity to 1 keeps them
+   always legible while the 3D stage and dashboard continue to move.
    ============================================================ */
 .hero-text > .hero-lead,
 .hero-text > .actions,
@@ -33,81 +36,9 @@
 }
 
 /* ============================================================
-   MOBILE (≤900px) — reorder + real 3D stage height
-   · .hero-text becomes display:contents so its children can be
-     reordered against .hero-visual in a single flex column.
-   · Dashboard goes to the very bottom (order 7).
-   · 3D stage is given an explicit height so hero3d.js can measure
-     it, position the camera, and render the spinning spindles.
-   ============================================================ */
-@media (max-width: 900px) {
-  .hero-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
-  }
-  .hero-text {
-    display: contents !important;
-  }
-  .hero-text > .pill        { order: 1; }
-  .hero-text > .hero-title  { order: 2; }
-  .hero-text > .hero-lead   { order: 3; }
-  .hero-text > .actions     { order: 4; }
-  .hero-text > .hero-proof  { order: 5; }
-
-  /* --- visual container: real box, visible, not clipped --- */
-  .hero-visual {
-    order: 6 !important;
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 380px !important;
-    margin-top: 12px;
-    opacity: 1 !important;
-    visibility: visible !important;
-    overflow: visible !important;
-  }
-
-  /* --- stage: clamped height so it is never 0px --- */
-  .hero-visual .stage,
-  #stage3d {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    height: 380px !important;
-    min-height: 380px !important;
-    max-height: 62vh !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    overflow: hidden !important;
-  }
-
-  /* --- canvas: fill the stage, ignore Three.js inline sizing --- */
-  .hero-visual .stage canvas,
-  #stage3d canvas {
-    display: block !important;
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
-  /* HUD cards sit above the canvas */
-  .hero-visual .hud { z-index: 5; }
-
-  /* dashboard at the very bottom */
-  .hero-text > .hero-dash {
-    order: 7 !important;
-    margin-top: 22px;
-    margin-bottom: 4px;
-  }
-}
-
-/* ============================================================
    HERO TELEMETRY DASHBOARD — 4-band efficiency colour system
+   --st   = state colour
+   --st-rgb = same colour as "r,g,b" so we can do rgba()
    ============================================================ */
 @property --dash-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
 
@@ -1107,35 +1038,6 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script type="module" src="hero3d.js"></script>
 <script type="module" src="bobbin3d.js"></script>
-
-<!-- Extra safety: after load, nudge the 3D hero to re-measure.
-     Some mobile browsers apply the flex-column layout a tick after the
-     module boots, leaving the stage at 0px. Resizing the viewport by a
-     hair (then back) forces hero3d.js's ResizeObserver to fire again. -->
-<script>
-  (function () {
-    function nudge() {
-      var stage = document.getElementById('stage3d');
-      if (!stage) return;
-      // force a synchronous reflow so the browser reports the real size
-      void stage.offsetHeight;
-      // tiny synthetic resize: toggle a 1px difference in <html> width
-      var root = document.documentElement;
-      var w = root.style.width;
-      root.style.width = 'calc(100% - 1px)';
-      void root.offsetHeight;
-      root.style.width = w || '';
-    }
-    window.addEventListener('load', function () {
-      setTimeout(nudge, 200);
-      setTimeout(nudge, 800);
-      setTimeout(nudge, 1600);
-    });
-    window.addEventListener('orientationchange', function () {
-      setTimeout(nudge, 400);
-    });
-  })();
-</script>
 <!-- /BUILD:scripts -->
 </body>
 </html>
