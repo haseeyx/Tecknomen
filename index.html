@@ -33,10 +33,12 @@
 }
 
 /* ============================================================
-   MOBILE ORDER: push the telemetry dashboard to the very bottom
-   of the hero, i.e. below the 3D stage — not above it.
-   `.hero-text` becomes transparent to layout so we can reorder
-   all its children against `.hero-visual` with flex `order`.
+   MOBILE ORDER + STAGE HEIGHT
+   · Reorder so the telemetry dashboard lands at the very bottom
+     of the hero (below the 3D stage), not above it.
+   · Give the WebGL stage an explicit height: without it, the
+     flex-column layout collapses it to 0px and the spinning
+     spindles become invisible on phones.
    ============================================================ */
 @media (max-width: 900px) {
   .hero-grid {
@@ -57,6 +59,23 @@
 
   /* dashboard sits at the very bottom, after the 3D stage */
   .hero-text > .hero-dash   { order: 7; margin-top: 22px; margin-bottom: 4px; }
+
+  /* --- critical for mobile: real box for the 3D stage --- */
+  .hero-visual {
+    width: 100%;
+    min-height: 360px;
+  }
+  .hero-visual .stage {
+    position: relative;
+    width: 100%;
+    height: clamp(320px, 68vw, 420px);
+    min-height: 320px;
+  }
+  .hero-visual .stage canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
 }
 
 /* ============================================================
