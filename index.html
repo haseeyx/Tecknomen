@@ -33,12 +33,12 @@
 }
 
 /* ============================================================
-   MOBILE ORDER + STAGE HEIGHT
-   · Reorder so the telemetry dashboard lands at the very bottom
-     of the hero (below the 3D stage), not above it.
-   · Give the WebGL stage an explicit height: without it, the
-     flex-column layout collapses it to 0px and the spinning
-     spindles become invisible on phones.
+   MOBILE (≤900px) — reorder + real 3D stage height
+   · .hero-text becomes display:contents so its children can be
+     reordered against .hero-visual in a single flex column.
+   · Dashboard goes to the very bottom (order 7).
+   · 3D stage is given an explicit height so hero3d.js can measure
+     it, position the camera, and render the spinning spindles.
    ============================================================ */
 @media (max-width: 900px) {
   .hero-grid {
@@ -55,26 +55,54 @@
   .hero-text > .actions     { order: 4; }
   .hero-text > .hero-proof  { order: 5; }
 
-  .hero-visual              { order: 6; margin-top: 12px; }
-
-  /* dashboard sits at the very bottom, after the 3D stage */
-  .hero-text > .hero-dash   { order: 7; margin-top: 22px; margin-bottom: 4px; }
-
-  /* --- critical for mobile: real box for the 3D stage --- */
+  /* --- visual container: real box, visible, not clipped --- */
   .hero-visual {
-    width: 100%;
-    min-height: 360px;
+    order: 6 !important;
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 380px !important;
+    margin-top: 12px;
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: visible !important;
   }
-  .hero-visual .stage {
-    position: relative;
-    width: 100%;
-    height: clamp(320px, 68vw, 420px);
-    min-height: 320px;
+
+  /* --- stage: clamped height so it is never 0px --- */
+  .hero-visual .stage,
+  #stage3d {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: 380px !important;
+    min-height: 380px !important;
+    max-height: 62vh !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: hidden !important;
   }
-  .hero-visual .stage canvas {
-    display: block;
+
+  /* --- canvas: fill the stage, ignore Three.js inline sizing --- */
+  .hero-visual .stage canvas,
+  #stage3d canvas {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* HUD cards sit above the canvas */
+  .hero-visual .hud { z-index: 5; }
+
+  /* dashboard at the very bottom */
+  .hero-text > .hero-dash {
+    order: 7 !important;
+    margin-top: 22px;
+    margin-bottom: 4px;
   }
 }
 
@@ -1079,6 +1107,35 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script type="module" src="hero3d.js"></script>
 <script type="module" src="bobbin3d.js"></script>
+
+<!-- Extra safety: after load, nudge the 3D hero to re-measure.
+     Some mobile browsers apply the flex-column layout a tick after the
+     module boots, leaving the stage at 0px. Resizing the viewport by a
+     hair (then back) forces hero3d.js's ResizeObserver to fire again. -->
+<script>
+  (function () {
+    function nudge() {
+      var stage = document.getElementById('stage3d');
+      if (!stage) return;
+      // force a synchronous reflow so the browser reports the real size
+      void stage.offsetHeight;
+      // tiny synthetic resize: toggle a 1px difference in <html> width
+      var root = document.documentElement;
+      var w = root.style.width;
+      root.style.width = 'calc(100% - 1px)';
+      void root.offsetHeight;
+      root.style.width = w || '';
+    }
+    window.addEventListener('load', function () {
+      setTimeout(nudge, 200);
+      setTimeout(nudge, 800);
+      setTimeout(nudge, 1600);
+    });
+    window.addEventListener('orientationchange', function () {
+      setTimeout(nudge, 400);
+    });
+  })();
+</script>
 <!-- /BUILD:scripts -->
 </body>
 </html>
