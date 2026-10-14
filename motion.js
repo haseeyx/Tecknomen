@@ -1,18 +1,17 @@
 /* ============================================================
    TEKNOMEN — motion layer (loads after script.js)
-   - navbar hides on scroll down, returns on scroll up, with a progress line
-   - hero 3D scroll: camera dolly + machine turn (read by hero3d.js),
-     text lifts away, glass cards fly apart
-   - pinned 3D coverflow of the flagship products
-   - headings rise word by word; About statement fills in as you scroll
-   - logo marquee reacts to scroll speed
-   - product filter with GSAP Flip
-   - magnetic buttons (mouse only)
-   - hero telemetry dashboard: live RPM / efficiency / tension, a sparkline
-     graph that dips to zero on a "yarn break", a 24-dot spindle matrix and
-     a toast banner. Listens for 'tek:spindle-alert' from hero3d.js.
-   Every effect checks for reduced motion and missing libraries, and nothing
-   is hidden in a way that could leave content invisible.
+   Navbar auto-hide, hero 3D scroll, pinned product coverflow,
+   heading reveals, logo marquee, product filter, magnetic
+   buttons, and the upgraded three-state telemetry dashboard.
+
+   Dashboard states:
+     run   → green,  values nominal, graph green
+     break → red,    values drop to zero, graph red
+     stuck → blue,   RPM collapses, tension spikes, graph blue
+
+   The state is driven by 'tek:spindle-alert' dispatched by
+   hero3d.js. The dashboard also runs its own random cycles so
+   it stays alive even if WebGL is unavailable.
 ============================================================ */
 (function () {
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -25,7 +24,7 @@
   run(navAutoHide);
   run(productFilter);
   run(spotlightBasics);
-  run(heroDashboard);          // runs regardless of GSAP
+  run(heroDashboard);
   if (!HAS_GSAP || REDUCED) return;
 
   gsap.registerPlugin(ScrollTrigger);
@@ -35,7 +34,7 @@
   if (FINE) run(magnetic);
   window.addEventListener('load', () => ScrollTrigger.refresh());
 
-  /* ---------- navbar: hide on the way down, show on the way up ---------- */
+  /* ---------- navbar ---------- */
   function navAutoHide() {
     const bar = document.getElementById('navBar');
     const prog = document.getElementById('navProgress');
@@ -57,15 +56,15 @@
     update();
   }
 
-  /* ---------- hero: scroll drives the 3D camera and pulls the layers apart ---------- */
+  /* ---------- hero scroll ---------- */
   function heroScroll() {
     const hero = document.querySelector('.hero');
     if (!hero) return;
     const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: true };
     window.__tekHero = 0;
     ScrollTrigger.create({ ...st, onUpdate: (s) => { window.__tekHero = s.progress; } });
-    gsap.to('.hero-text', { yPercent: -22, ease: 'none', scrollTrigger: st });
-    gsap.to('.hero-text', { opacity: 0.15, ease: 'none', scrollTrigger: { ...st, start: 'top+=10% top' } });
+    gsap.to('.hero-text > :not(.hero-dash)', { yPercent: -22, ease: 'none', scrollTrigger: st });
+    gsap.to('.hero-text > :not(.hero-dash)', { opacity: 0.15, ease: 'none', scrollTrigger: { ...st, start: 'top+=10% top' } });
     const paths = [[-70, -60, -6], [60, -30, 5], [-40, 60, -4]];
     gsap.utils.toArray('.hero .hud').forEach((h, i) => {
       const [x, y, r] = paths[i % paths.length];
@@ -73,7 +72,7 @@
     });
   }
 
-  /* ---------- product pages: the product card tilts away in 3D as you scroll ---------- */
+  /* ---------- product hero ---------- */
   function productHeroScroll() {
     const hero = document.querySelector('.p-hero');
     if (!hero) return;
@@ -86,7 +85,7 @@
     });
   }
 
-  /* ---------- headings: words rise in from a mask ---------- */
+  /* ---------- headings ---------- */
   function headings() {
     document.querySelectorAll('.sec-head').forEach((head) => {
       const h = head.querySelector('h2');
@@ -108,7 +107,7 @@
     });
   }
 
-  /* ---------- About: words fill in as you read down ---------- */
+  /* ---------- about statement ---------- */
   function aboutStatement() {
     const el = document.querySelector('.about-statement');
     if (!el) return;
@@ -119,7 +118,7 @@
     });
   }
 
-  /* ---------- flagship spotlight: coverflow transforms for any layout ---------- */
+  /* ---------- spotlight basics ---------- */
   function spotlightBasics() {
     const track = document.getElementById('spotTrack');
     if (!track) return;
@@ -154,7 +153,7 @@
     layout();
   }
 
-  /* ---------- flagship spotlight: pinned horizontal scroll (desktop) ---------- */
+  /* ---------- spotlight pinned ---------- */
   function spotlightPinned() {
     const section = document.getElementById('spotlight');
     const track = document.getElementById('spotTrack');
@@ -179,7 +178,7 @@
     });
   }
 
-  /* ---------- logos: speed and lean follow the scroll velocity ---------- */
+  /* ---------- marquee ---------- */
   function velocityMarquee() {
     const track = document.querySelector('.marquee-track');
     if (!track) return;
@@ -200,7 +199,7 @@
     });
   }
 
-  /* ---------- product filter with Flip ---------- */
+  /* ---------- product filter ---------- */
   function productFilter() {
     const grid = document.querySelector('#products .bento');
     const buttons = document.querySelectorAll('.filter-btn');
@@ -230,7 +229,7 @@
     }));
   }
 
-  /* ---------- magnetic buttons ---------- */
+  /* ---------- magnetic ---------- */
   function magnetic() {
     document.querySelectorAll('.hero .btn, .p-hero .btn, .nav-cta .btn, .cta-content .btn, .spot-progress, .filter-btn').forEach((b) => {
       const xTo = gsap.quickTo(b, 'x', { duration: 0.5, ease: 'power3' });
@@ -245,69 +244,89 @@
   }
 
   /* ============================================================
-     HERO TELEMETRY DASHBOARD — upgraded
-     · live RPM / efficiency / tension with gentle noise
-     · sparkline with dashed nominal line and glow head dot
-     · 24-dot spindle matrix (one flashes red on break)
-     · value bump flash + status pill + toast banner
-     · syncs to 'tek:spindle-alert' dispatched by hero3d.js
+     HERO TELEMETRY DASHBOARD — three-state version
      ============================================================ */
   function heroDashboard() {
     const panel    = document.getElementById('heroDash');
     const canvas   = document.getElementById('hdCanvas');
     if (!panel || !canvas) return;
 
-    const ctx       = canvas.getContext('2d');
-    const rpmEl     = document.getElementById('hdRpm');
-    const effEl     = document.getElementById('hdEff');
-    const tenEl     = document.getElementById('hdTen');
-    const statusEl  = document.getElementById('hdStatus');
-    const spindleEl = document.getElementById('hdSpindle');
-    const matrixEl  = document.getElementById('hdMatrix');
-    const rpmWrap   = document.getElementById('hdRpmWrap');
-    const effWrap   = document.getElementById('hdEffWrap');
-    const tenWrap   = document.getElementById('hdTenWrap');
+    const ctx        = canvas.getContext('2d');
+    const rpmEl      = document.getElementById('hdRpm');
+    const effEl      = document.getElementById('hdEff');
+    const tenEl      = document.getElementById('hdTen');
+    const statusEl   = document.getElementById('hdStatus');
+    const statusText = document.getElementById('hdStatusText');
+    const spindleEl  = document.getElementById('hdSpindle');
+    const matrixEl   = document.getElementById('hdMatrix');
+    const toastEl    = document.getElementById('hdToast');
+    const rpmWrap    = document.getElementById('hdRpmWrap');
+    const effWrap    = document.getElementById('hdEffWrap');
+    const tenWrap    = document.getElementById('hdTenWrap');
+    const icons      = [...panel.querySelectorAll('.hd-ico')];
 
-    /* --- build the spindle matrix (one dot per spindle) --- */
+    /* ---------- spindle matrix ---------- */
     const DOT_COUNT = 24;
     const dots = [];
     if (matrixEl) {
       for (let i = 0; i < DOT_COUNT; i++) {
         const d = document.createElement('i');
+        d.style.animationDelay = (i * 22) + 'ms';
         matrixEl.appendChild(d);
         dots.push(d);
       }
+      // trigger cascade after a beat
+      requestAnimationFrame(() => matrixEl.classList.add('is-ready'));
     }
-    function flashDot() {
+    let dotTimer = 0;
+    function flashDot(kind) {
       if (!dots.length) return;
-      dots.forEach((d) => d.classList.remove('is-broken'));
+      // clear previous
+      dots.forEach((d) => d.classList.remove('is-broken', 'is-stuck'));
       const idx = Math.floor(Math.random() * dots.length);
-      dots[idx].classList.add('is-broken');
-      setTimeout(() => dots[idx] && dots[idx].classList.remove('is-broken'), 2800);
+      const cls = kind === 'stuck' ? 'is-stuck' : 'is-broken';
+      dots[idx].classList.add(cls);
+      clearTimeout(dotTimer);
+      dotTimer = setTimeout(() => dots[idx] && dots[idx].classList.remove(cls), 2800);
     }
 
-    /* --- bump flash on a metric value --- */
+    /* ---------- bump + icon wiggle ---------- */
     function bump(el) {
       if (!el) return;
       el.classList.remove('is-bump');
-      // force reflow so the animation restarts
       void el.offsetWidth;
       el.classList.add('is-bump');
-      setTimeout(() => el.classList.remove('is-bump'), 750);
+      setTimeout(() => el.classList.remove('is-bump'), 800);
+    }
+    function wiggleIcons() {
+      icons.forEach((ic) => {
+        ic.classList.remove('is-wiggle');
+        void ic.offsetWidth;
+        ic.classList.add('is-wiggle');
+        setTimeout(() => ic.classList.remove('is-wiggle'), 900);
+      });
     }
 
-    /* --- sparkline history --- */
+    /* ---------- state machine ---------- */
     const POINTS = 64;
     const RPM_IDLE = 18240, EFF_IDLE = 98.6, TEN_IDLE = 4.12, NOMINAL = 98.6;
+
+    // stuck-state targets
+    const RPM_STUCK = 1400, EFF_STUCK = 42, TEN_STUCK = 6.8;
+
     const data = new Array(POINTS).fill(EFF_IDLE);
 
     const s = {
       rpm: RPM_IDLE, eff: EFF_IDLE, ten: TEN_IDLE,
       spindle: 142,
-      phase: 'run', phaseT: 0, breakFor: 2.4,
-      nextBreak: 6 + Math.random() * 5,
-      lastBreakAt: -99,
+      phase: 'run',          // 'run' | 'break' | 'stuck' | 'recover'
+      recoveryTo: RPM_IDLE,
+      phaseT: 0,
+      breakFor: 2.4,
+      nextBreak: 5 + Math.random() * 5,
+      lastAlertAt: -99,
       status: 'Running',
+      lastKind: 'break',
     };
 
     function fit() {
@@ -319,12 +338,19 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
+    function currentColor() {
+      if (s.phase === 'break') return '#ff3b1f';
+      if (s.phase === 'stuck') return '#4a9dff';
+      if (s.phase === 'recover') return '#f5c542';
+      return '#19d38f';
+    }
+
     function draw() {
       const w = canvas.clientWidth, h = canvas.clientHeight;
       if (!w || !h) return;
       ctx.clearRect(0, 0, w, h);
 
-      // horizontal grid lines
+      // grid
       ctx.strokeStyle = 'rgba(255,255,255,.07)';
       ctx.lineWidth = 1;
       for (let i = 1; i <= 3; i++) {
@@ -335,7 +361,7 @@
       const stepX = w / (POINTS - 1);
       const toY = (v) => h - (Math.max(0, Math.min(100, v)) / 100) * (h - 8) - 4;
 
-      // dashed nominal line at ~98.6%
+      // dashed nominal line
       const nominalY = toY(NOMINAL);
       ctx.save();
       ctx.setLineDash([4, 4]);
@@ -348,12 +374,23 @@
       ctx.restore();
 
       const alert = s.phase !== 'run';
-      const line  = alert ? '#ff3b1f' : '#19d38f';
+      const line  = currentColor();
 
-      // area fill
+      // area
       const grd = ctx.createLinearGradient(0, 0, 0, h);
-      grd.addColorStop(0, alert ? 'rgba(255,59,31,.42)' : 'rgba(25,211,143,.42)');
-      grd.addColorStop(1, alert ? 'rgba(255,59,31,0)'  : 'rgba(25,211,143,0)');
+      if (s.phase === 'break') {
+        grd.addColorStop(0, 'rgba(255,59,31,.42)');
+        grd.addColorStop(1, 'rgba(255,59,31,0)');
+      } else if (s.phase === 'stuck') {
+        grd.addColorStop(0, 'rgba(74,157,255,.42)');
+        grd.addColorStop(1, 'rgba(74,157,255,0)');
+      } else if (s.phase === 'recover') {
+        grd.addColorStop(0, 'rgba(245,197,66,.38)');
+        grd.addColorStop(1, 'rgba(245,197,66,0)');
+      } else {
+        grd.addColorStop(0, 'rgba(25,211,143,.42)');
+        grd.addColorStop(1, 'rgba(25,211,143,0)');
+      }
       ctx.beginPath();
       ctx.moveTo(0, h);
       for (let i = 0; i < POINTS; i++) ctx.lineTo(i * stepX, toY(data[i]));
@@ -373,41 +410,56 @@
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.shadowColor = line;
-      ctx.shadowBlur = alert ? 10 : 4;
+      ctx.shadowBlur = alert ? 12 : 4;
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // head dot with a soft glow
+      // head dot + end-of-line light
       const lx = (POINTS - 1) * stepX, ly = toY(data[POINTS - 1]);
+      // outer glow
+      const hl = ctx.createRadialGradient(lx - 2, ly, 0, lx - 2, ly, 18);
+      hl.addColorStop(0, line);
+      hl.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = hl;
       ctx.beginPath();
-      ctx.arc(lx - 1.5, ly, 3.2, 0, Math.PI * 2);
+      ctx.arc(lx - 2, ly, 18, 0, Math.PI * 2);
+      ctx.fill();
+      // solid dot
+      ctx.beginPath();
+      ctx.arc(lx - 2, ly, 3.6, 0, Math.PI * 2);
       ctx.fillStyle = line;
       ctx.shadowColor = line;
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 14;
       ctx.fill();
       ctx.shadowBlur = 0;
     }
 
-    /* --- react to the 3D alert --- */
+    /* ---------- react to 3D alerts ---------- */
     document.addEventListener('tek:spindle-alert', (e) => {
+      const now = performance.now() / 1000;
       if (e && e.detail && e.detail.spindle && spindleEl) {
         s.spindle = e.detail.spindle;
+        spindleEl.textContent = 'Spindle ' + s.spindle;
       }
-      const now = performance.now() / 1000;
-      if (s.phase === 'run' && (now - s.lastBreakAt) > 5) {
-        s.phase = 'break';
-        s.phaseT = 0;
-        s.breakFor = 2.2 + Math.random() * 1.2;
-        s.lastBreakAt = now;
+      // ignore if we just triggered one
+      if (now - s.lastAlertAt < 3) return;
+      const kind = (e && e.detail && e.detail.type === 'stuck') ? 'stuck' : 'break';
+      s.lastKind = kind;
+      s.phase = kind;
+      s.phaseT = 0;
+      s.breakFor = kind === 'stuck' ? 2.8 + Math.random() * 1.2 : 2.2 + Math.random() * 1.4;
+      s.lastAlertAt = now;
+      flashDot(kind);
+      wiggleIcons();
+      if (toastEl) {
+        toastEl.textContent = kind === 'stuck' ? '⚠ Spindle stuck — torque high' : '⚠ Yarn break detected';
       }
-      flashDot();
-      if (spindleEl) spindleEl.textContent = 'Spindle ' + s.spindle;
     });
 
-    /* --- main loop --- */
+    /* ---------- main loop ---------- */
     let last = performance.now();
     let acc = 0;
-    const STEP = 0.36; // seconds per graph sample
+    const STEP = 0.36;
 
     function frame(now) {
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -425,14 +477,22 @@
         s.ten += (TEN_IDLE - s.ten) * 0.18 + (Math.random() - 0.5) * 0.06;
         s.ten = Math.max(3.5, Math.min(4.7, s.ten));
         s.status = 'Running';
+
+        // self-trigger a new alert even if 3D is silent (e.g. no WebGL)
         if (s.phaseT > s.nextBreak) {
-          s.phase = 'break';
+          const kind = Math.random() < 0.55 ? 'break' : 'stuck';
+          s.lastKind = kind;
+          s.phase = kind;
           s.phaseT = 0;
-          s.breakFor = 2.2 + Math.random() * 1.4;
+          s.breakFor = kind === 'stuck' ? 2.8 + Math.random() * 1.2 : 2.2 + Math.random() * 1.4;
           s.spindle = 100 + Math.floor(Math.random() * 900);
-          s.lastBreakAt = performance.now() / 1000;
+          s.lastAlertAt = performance.now() / 1000;
           if (spindleEl) spindleEl.textContent = 'Spindle ' + s.spindle;
-          flashDot();
+          flashDot(kind);
+          wiggleIcons();
+          if (toastEl) {
+            toastEl.textContent = kind === 'stuck' ? '⚠ Spindle stuck — torque high' : '⚠ Yarn break detected';
+          }
         }
       } else if (s.phase === 'break') {
         s.rpm *= 0.80; s.eff *= 0.80; s.ten *= 0.78;
@@ -440,36 +500,63 @@
         if (s.eff < 0.6) s.eff = 0;
         if (s.ten < 0.06) s.ten = 0;
         s.status = 'Yarn break';
-        if (s.phaseT > s.breakFor) { s.phase = 'recover'; s.phaseT = 0; }
+        if (s.phaseT > s.breakFor) {
+          s.phase = 'recover';
+          s.phaseT = 0;
+          s.recoveryTo = RPM_IDLE;
+        }
+      } else if (s.phase === 'stuck') {
+        // slow collapse to the stuck targets; tension rises
+        s.rpm += (RPM_STUCK - s.rpm) * 0.10;
+        s.eff += (EFF_STUCK - s.eff) * 0.10;
+        s.ten += (TEN_STUCK - s.ten) * 0.10;
+        // small jitter to feel alive
+        s.rpm += (Math.random() - 0.5) * 60;
+        s.ten += (Math.random() - 0.5) * 0.08;
+        s.status = 'Spindle stuck';
+        if (s.phaseT > s.breakFor) {
+          s.phase = 'recover';
+          s.phaseT = 0;
+          s.recoveryTo = RPM_IDLE;
+        }
       } else {
+        // recover
         s.rpm += (RPM_IDLE - s.rpm) * 0.07;
         s.eff += (EFF_IDLE - s.eff) * 0.07;
         s.ten += (TEN_IDLE - s.ten) * 0.07;
         s.status = 'Recovering';
-        if (s.eff > 97.6) { s.phase = 'run'; s.phaseT = 0; s.nextBreak = 6 + Math.random() * 6; }
+        if (s.eff > 97.6) {
+          s.phase = 'run';
+          s.phaseT = 0;
+          s.nextBreak = 6 + Math.random() * 6;
+        }
       }
 
-      // bump the metric values whenever the phase changes
+      // state-change animation triggers
       if (s.phase !== prevPhase) {
         bump(rpmWrap); bump(effWrap); bump(tenWrap);
       }
-
-      // occasional tiny "tick" bump for liveliness
       if (Math.random() < 0.0012) {
         const pick = [rpmWrap, effWrap, tenWrap][Math.floor(Math.random() * 3)];
         bump(pick);
       }
 
+      // update UI
       if (rpmEl) rpmEl.textContent = Math.round(s.rpm).toLocaleString('en-US');
       if (effEl) effEl.textContent = s.eff.toFixed(1);
       if (tenEl) tenEl.textContent = s.ten.toFixed(2);
-      if (statusEl) statusEl.textContent = s.status;
+      if (statusText) statusText.textContent = s.status;
 
-      const alert = s.phase !== 'run';
-      panel.classList.toggle('is-alert', alert);
-      if (statusEl) statusEl.classList.toggle('is-alert', alert);
+      const isBreak = s.phase === 'break';
+      const isStuck = s.phase === 'stuck';
+      panel.classList.toggle('is-break', isBreak);
+      panel.classList.toggle('is-stuck', isStuck);
+      if (statusEl) {
+        statusEl.classList.toggle('is-break', isBreak);
+        statusEl.classList.toggle('is-stuck', isStuck);
+      }
 
-      // push a new sample into the sparkline
+      // push a sample into the sparkline
       while (acc >= STEP) {
         acc -= STEP;
         const jitter = (Math.random() - 0.5) * 1.3;

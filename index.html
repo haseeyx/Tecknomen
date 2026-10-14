@@ -26,20 +26,19 @@
 }
 
 /* ============================================================
-   HERO TELEMETRY DASHBOARD (upgraded)
+   HERO TELEMETRY DASHBOARD — sits at the bottom of the hero-text
+   column, i.e. bottom-left of the hero.
    ============================================================ */
 @property --dash-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
 
-.hero .hero-visual { position: relative; }
-
 .hero-dash {
-  position: absolute;
-  left: clamp(6px, 2.5%, 22px);
-  bottom: clamp(6px, 3%, 22px);
-  width: min(340px, 86%);
-  padding: 12px 14px 12px;
+  position: relative;
+  width: 100%;
+  max-width: 470px;
+  margin-top: 26px;
+  padding: 13px 15px 12px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(11,24,48,.86) 0%, rgba(7,16,34,.92) 100%);
+  background: linear-gradient(180deg, rgba(11,24,48,.88) 0%, rgba(7,16,34,.94) 100%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid rgba(130,180,255,.18);
@@ -48,14 +47,14 @@
     inset 0 1px 0 rgba(255,255,255,.07);
   color: #e9f0ff;
   z-index: 4;
-  pointer-events: none;
   font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   font-variant-numeric: tabular-nums;
   transition: border-color .35s ease, box-shadow .35s ease;
   isolation: isolate;
+  overflow: visible;
 }
 
-/* rotating conic-gradient border (subtle sweep of light) */
+/* rotating conic-gradient border */
 .hero-dash::before {
   content: '';
   position: absolute;
@@ -64,7 +63,7 @@
   padding: 1px;
   background: conic-gradient(from var(--dash-angle, 0deg),
     rgba(130,180,255,0)    0deg,
-    rgba(130,180,255,.65) 60deg,
+    rgba(130,180,255,.7)  60deg,
     rgba(130,180,255,0)  140deg,
     rgba(130,180,255,0)  360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -76,14 +75,15 @@
 }
 @keyframes dashSpin { to { --dash-angle: 360deg; } }
 
-.hero-dash.is-alert {
+/* state: yarn break (red) */
+.hero-dash.is-break {
   border-color: rgba(255,80,50,.65);
   box-shadow:
     0 22px 60px rgba(255,60,30,.32),
     0 0 0 1px rgba(255,80,50,.28),
     inset 0 1px 0 rgba(255,255,255,.07);
 }
-.hero-dash.is-alert::before {
+.hero-dash.is-break::before {
   background: conic-gradient(from var(--dash-angle, 0deg),
     rgba(255,80,50,0)    0deg,
     rgba(255,80,50,.95) 60deg,
@@ -92,10 +92,27 @@
   animation-duration: 1.6s;
 }
 
+/* state: stuck (blue) */
+.hero-dash.is-stuck {
+  border-color: rgba(80,160,255,.65);
+  box-shadow:
+    0 22px 60px rgba(60,140,255,.30),
+    0 0 0 1px rgba(80,160,255,.28),
+    inset 0 1px 0 rgba(255,255,255,.07);
+}
+.hero-dash.is-stuck::before {
+  background: conic-gradient(from var(--dash-angle, 0deg),
+    rgba(80,160,255,0)    0deg,
+    rgba(80,160,255,.95) 60deg,
+    rgba(80,160,255,0)  140deg,
+    rgba(80,160,255,0)  360deg);
+  animation-duration: 2.6s;
+}
+
 /* slide-in toast above the panel */
 .hd-toast {
   position: absolute;
-  left: 50%;
+  left: 0;
   bottom: 100%;
   margin-bottom: 8px;
   padding: 5px 12px;
@@ -110,20 +127,38 @@
   box-shadow: 0 10px 26px rgba(255,60,30,.45);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 10px) scale(.94);
-  transition: opacity .3s ease, transform .4s cubic-bezier(.2,.9,.3,1.35);
+  transform: translateY(10px) scale(.94);
+  transition: opacity .3s ease, transform .4s cubic-bezier(.2,.9,.3,1.35), background .3s;
   z-index: 3;
 }
-.hero-dash.is-alert .hd-toast {
+.hero-dash.is-break .hd-toast {
   opacity: 1;
-  transform: translate(-50%, 0) scale(1);
+  transform: translateY(0) scale(1);
+  background: linear-gradient(180deg, rgba(255,59,31,.96), rgba(200,30,15,.96));
+  box-shadow: 0 10px 26px rgba(255,60,30,.45);
+}
+.hero-dash.is-stuck .hd-toast {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  background: linear-gradient(180deg, rgba(70,150,255,.96), rgba(30,90,200,.96));
+  box-shadow: 0 10px 26px rgba(60,140,255,.45);
 }
 
 .hd-head {
   display: flex; align-items: center; gap: 8px;
-  margin-bottom: 9px;
+  margin-bottom: 10px;
   font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
   color: #8fb0e0;
+}
+.hd-head .hd-broadcast {
+  width: 12px; height: 12px;
+  flex: none;
+  color: #8fb0e0;
+  animation: hdBroadcast 2.6s ease-in-out infinite;
+}
+@keyframes hdBroadcast {
+  0%, 100% { opacity: .55; }
+  50%      { opacity: 1; }
 }
 .hd-dot {
   position: relative;
@@ -132,6 +167,7 @@
   box-shadow: 0 0 10px #19d38f;
   animation: hdPulse 1.8s ease-in-out infinite;
   flex: none;
+  transition: background .3s, box-shadow .3s;
 }
 .hd-dot::after {
   content: '';
@@ -139,13 +175,18 @@
   width: 7px; height: 7px;
   margin: -3.5px 0 0 -3.5px;
   border-radius: 50%;
-  background: #19d38f;
+  background: inherit;
   animation: hdRing 1.8s ease-out infinite;
 }
-.hero-dash.is-alert .hd-dot,
-.hero-dash.is-alert .hd-dot::after {
+.hero-dash.is-break .hd-dot,
+.hero-dash.is-break .hd-dot::after {
   background: #ff3b1f;
   box-shadow: 0 0 16px #ff3b1f, 0 0 32px rgba(255,59,31,.6);
+}
+.hero-dash.is-stuck .hd-dot,
+.hero-dash.is-stuck .hd-dot::after {
+  background: #4a9dff;
+  box-shadow: 0 0 16px #4a9dff, 0 0 32px rgba(74,157,255,.6);
 }
 @keyframes hdPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
@@ -159,51 +200,74 @@
 .hd-frame { margin-left: auto; color: #7fa0d0; white-space: nowrap; }
 
 .hd-metrics {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px;
-  margin-bottom: 9px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 10px;
 }
 .hd-metric {
-  display: flex; flex-direction: column; gap: 3px;
-  padding: 7px 8px; border-radius: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 9px; border-radius: 10px;
   background: rgba(255,255,255,.045);
   border: 1px solid rgba(255,255,255,.055);
   min-width: 0;
+  transition: background .3s, border-color .3s;
 }
 .hd-label {
+  display: flex; align-items: center; gap: 4px;
   font-size: 9px; letter-spacing: .07em; text-transform: uppercase;
   color: #7e9ccb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color .3s;
+}
+.hd-ico {
+  width: 11px; height: 11px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .35s ease;
 }
 .hd-value {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 14px; font-weight: 500; color: #eaf4ff;
+  font-size: 14.5px; font-weight: 500; color: #eaf4ff;
   display: flex; align-items: baseline; gap: 3px;
   line-height: 1.1; white-space: nowrap;
   transition: color .3s ease, text-shadow .3s ease;
 }
 .hd-value small { font-size: 9px; color: #7e9ccb; font-weight: 400; letter-spacing: .04em; }
-.hero-dash.is-alert .hd-value { color: #ff8b73; }
+
+/* state-colored metric appearance */
+.hero-dash.is-break .hd-label,
+.hero-dash.is-break .hd-value { color: #ff8b73; }
+.hero-dash.is-stuck .hd-label,
+.hero-dash.is-stuck .hd-value { color: #7eb9ff; }
 
 /* value bump flash on significant change */
-.hd-value.is-bump { animation: hdBump .7s ease-out; }
+.hd-value.is-bump { animation: hdBump .75s ease-out; }
 @keyframes hdBump {
-  0%   { color: #ffffff; text-shadow: 0 0 16px rgba(120,220,255,.95); transform: translateY(-1.5px); }
+  0%   { color: #ffffff; text-shadow: 0 0 18px rgba(120,220,255,.95); transform: translateY(-2px); }
   100% { color: inherit; text-shadow: none; transform: none; }
 }
-.hero-dash.is-alert .hd-value.is-bump {
-  animation-name: hdBumpAlert;
-}
-@keyframes hdBumpAlert {
-  0%   { color: #ffffff; text-shadow: 0 0 18px rgba(255,90,60,.95); transform: translateY(-1.5px); }
-  100% { color: #ff8b73; text-shadow: none; transform: none; }
+
+/* icon wiggle on state change */
+.hd-ico.is-wiggle { animation: hdWiggle .8s ease-in-out; }
+@keyframes hdWiggle {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-16deg) scale(1.12); }
+  50%      { transform: rotate(14deg) scale(1.18); }
+  75%      { transform: rotate(-8deg) scale(1.06); }
 }
 
 .hd-graph {
   position: relative;
-  width: 100%; height: 62px;
+  width: 100%; height: 64px;
   border-radius: 10px; overflow: hidden;
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.05);
+  transition: border-color .3s;
 }
+.hero-dash.is-break .hd-graph { border-color: rgba(255,80,50,.28); }
+.hero-dash.is-stuck .hd-graph { border-color: rgba(80,160,255,.28); }
 .hd-graph canvas { display: block; width: 100%; height: 100%; }
 
 /* scan-line sweep across the graph */
@@ -221,37 +285,58 @@
   pointer-events: none;
   mix-blend-mode: screen;
 }
-.hero-dash.is-alert .hd-graph::after {
+.hero-dash.is-break .hd-graph::after {
   background: linear-gradient(90deg,
     transparent 0%,
     rgba(255,90,60,.16) 45%,
     rgba(255,90,60,.34) 50%,
     rgba(255,90,60,.16) 55%,
     transparent 100%);
-  animation-duration: 1.6s;
+  animation-duration: 1.4s;
+}
+.hero-dash.is-stuck .hd-graph::after {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(90,160,255,.16) 45%,
+    rgba(90,160,255,.34) 50%,
+    rgba(90,160,255,.16) 55%,
+    transparent 100%);
+  animation-duration: 2.2s;
 }
 @keyframes hdScan { to { transform: translateX(100%); } }
 
 .hd-graph-foot {
   display: flex; justify-content: space-between; align-items: center;
-  margin-top: 7px; font-size: 9.5px; letter-spacing: .05em;
+  margin-top: 8px; font-size: 9.5px; letter-spacing: .05em;
   color: #7e9ccb;
 }
 .hd-status {
-  padding: 2px 8px; border-radius: 999px;
+  padding: 3px 9px; border-radius: 999px;
   background: rgba(25,211,143,.14); color: #19d38f;
   font-weight: 600; text-transform: uppercase; font-size: 9px;
+  letter-spacing: .08em;
+  display: inline-flex; align-items: center; gap: 5px;
   transition: background .3s, color .3s;
 }
-.hd-status.is-alert { background: rgba(255,59,31,.18); color: #ff6a4d; }
+.hd-status svg {
+  width: 9px; height: 9px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hd-status.is-break { background: rgba(255,59,31,.18); color: #ff6a4d; }
+.hd-status.is-stuck { background: rgba(74,157,255,.20); color: #7eb9ff; }
 
-/* spindle matrix: one dot per spindle, one flashes on a break */
+/* spindle matrix */
 .hd-matrix {
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   gap: 3px;
-  margin-top: 9px;
-  padding-top: 8px;
+  margin-top: 10px;
+  padding-top: 9px;
   border-top: 1px solid rgba(255,255,255,.06);
 }
 .hd-matrix i {
@@ -261,29 +346,43 @@
   background: #19d38f;
   box-shadow: 0 0 6px rgba(25,211,143,.55);
   opacity: .78;
+  transform: scale(.6);
   transition: background .25s, box-shadow .25s, opacity .25s, transform .25s;
+}
+.hd-matrix.is-ready i {
+  animation: hdDotIn .55s cubic-bezier(.2,.9,.3,1.35) forwards;
+}
+@keyframes hdDotIn {
+  to { transform: scale(1); opacity: .78; }
 }
 .hd-matrix i.is-broken {
   background: #ff3b1f;
   box-shadow: 0 0 14px #ff3b1f, 0 0 26px rgba(255,59,31,.75);
   opacity: 1;
-  transform: scale(1.35);
+  transform: scale(1.4);
   animation: hdBlink .55s steps(2, end) infinite;
 }
+.hd-matrix i.is-stuck {
+  background: #4a9dff;
+  box-shadow: 0 0 14px #4a9dff, 0 0 26px rgba(74,157,255,.75);
+  opacity: 1;
+  transform: scale(1.4);
+  animation: hdSlow .9s ease-in-out infinite;
+}
 @keyframes hdBlink { 50% { opacity: .32; } }
+@keyframes hdSlow {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
 
 @media (max-width: 980px) {
-  .hero-dash { width: min(310px, 92%); }
+  .hero-dash { max-width: 100%; }
 }
 @media (max-width: 640px) {
-  .hero-dash {
-    left: 8px; right: 8px; bottom: 8px;
-    width: auto;
-    padding: 10px 12px 10px;
-  }
+  .hero-dash { padding: 11px 12px 11px; margin-top: 22px; }
   .hd-metrics { gap: 5px; }
   .hd-value { font-size: 12.5px; }
-  .hd-graph { height: 50px; }
+  .hd-graph { height: 52px; }
   .hd-matrix { grid-template-columns: repeat(18, 1fr); }
 }
 </style>
@@ -331,6 +430,69 @@
           <li><strong>18</strong> client mills</li>
           <li>Since <strong>1992</strong></li>
         </ul>
+
+        <!-- ===== TELEMETRY DASHBOARD — bottom of the left column ===== -->
+        <div class="hero-dash hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
+          <span class="hd-toast" id="hdToast" aria-hidden="true">⚠ Yarn break detected</span>
+
+          <div class="hd-head">
+            <svg class="hd-broadcast" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4.9 4.9a10 10 0 0 0 0 14.2M7.8 7.8a6 6 0 0 0 0 8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+            <span class="hd-dot" aria-hidden="true"></span>
+            <span class="hd-title">Live telemetry</span>
+            <span class="hd-frame" id="hdSpindle">Spindle 142</span>
+          </div>
+
+          <div class="hd-metrics">
+            <div class="hd-metric">
+              <span class="hd-label">
+                <svg class="hd-ico" data-ico="rpm" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                  <path d="M13.4 12.6 19 7"/>
+                  <path d="M3.3 17a10 10 0 1 1 17.4 0"/>
+                </svg>
+                Speed
+              </span>
+              <strong class="hd-value" id="hdRpmWrap"><span id="hdRpm">18,240</span><small>rpm</small></strong>
+            </div>
+            <div class="hd-metric">
+              <span class="hd-label">
+                <svg class="hd-ico" data-ico="eff" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 3v18h18"/>
+                  <path d="M7 14l3-3 4 4 6-7"/>
+                </svg>
+                Efficiency
+              </span>
+              <strong class="hd-value" id="hdEffWrap"><span id="hdEff">98.6</span><small>%</small></strong>
+            </div>
+            <div class="hd-metric">
+              <span class="hd-label">
+                <svg class="hd-ico" data-ico="ten" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>
+                </svg>
+                Tension
+              </span>
+              <strong class="hd-value" id="hdTenWrap"><span id="hdTen">4.12</span><small>cN</small></strong>
+            </div>
+          </div>
+
+          <div class="hd-graph">
+            <canvas id="hdCanvas" aria-hidden="true"></canvas>
+          </div>
+
+          <div class="hd-graph-foot">
+            <span>Output · last 60 s</span>
+            <span class="hd-status" id="hdStatus">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span id="hdStatusText">Running</span>
+            </span>
+          </div>
+
+          <div class="hd-matrix" id="hdMatrix" aria-hidden="true"></div>
+        </div>
+        <!-- ===== /TELEMETRY DASHBOARD ===== -->
       </div>
 
       <div class="hero-visual hero-anim" aria-label="3D model of ring frame spindles with live monitoring">
@@ -348,44 +510,6 @@
           <strong>Resumed in 4 s</strong>
           <span class="hud-bar"><i></i></span>
         </div>
-
-        <!-- ===== UPGRADED: live telemetry dashboard ===== -->
-        <div class="hero-dash" id="heroDash" role="group" aria-label="Live spindle telemetry">
-          <span class="hd-toast" aria-hidden="true">⚠ Yarn break detected</span>
-
-          <div class="hd-head">
-            <span class="hd-dot" aria-hidden="true"></span>
-            <span class="hd-title">Live telemetry</span>
-            <span class="hd-frame" id="hdSpindle">Spindle 142</span>
-          </div>
-
-          <div class="hd-metrics">
-            <div class="hd-metric">
-              <span class="hd-label">Speed</span>
-              <strong class="hd-value" id="hdRpmWrap"><span id="hdRpm">18,240</span><small>rpm</small></strong>
-            </div>
-            <div class="hd-metric">
-              <span class="hd-label">Efficiency</span>
-              <strong class="hd-value" id="hdEffWrap"><span id="hdEff">98.6</span><small>%</small></strong>
-            </div>
-            <div class="hd-metric">
-              <span class="hd-label">Tension</span>
-              <strong class="hd-value" id="hdTenWrap"><span id="hdTen">4.12</span><small>cN</small></strong>
-            </div>
-          </div>
-
-          <div class="hd-graph">
-            <canvas id="hdCanvas" aria-hidden="true"></canvas>
-          </div>
-
-          <div class="hd-graph-foot">
-            <span>Output · last 60 s</span>
-            <span class="hd-status" id="hdStatus">Running</span>
-          </div>
-
-          <div class="hd-matrix" id="hdMatrix" aria-hidden="true"></div>
-        </div>
-        <!-- ===== /UPGRADED ===== -->
       </div>
     </div>
     <a class="scroll-cue" href="#clients" aria-label="Scroll to content"><span class="scroll-mouse"><i></i></span>Scroll</a>
