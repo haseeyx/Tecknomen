@@ -8,8 +8,9 @@
    - logo marquee reacts to scroll speed
    - product filter with GSAP Flip
    - magnetic buttons (mouse only)
-   - NEW: hero telemetry dashboard (live RPM / efficiency / tension +
-     sparkline graph that dips to zero on a "yarn break")
+   - hero telemetry dashboard: live RPM / efficiency / tension, a sparkline
+     graph that dips to zero on a "yarn break", a 24-dot spindle matrix and
+     a toast banner. Listens for 'tek:spindle-alert' from hero3d.js.
    Every effect checks for reduced motion and missing libraries, and nothing
    is hidden in a way that could leave content invisible.
 ============================================================ */
@@ -19,13 +20,12 @@
   const HAS_GSAP = typeof window.gsap !== 'undefined' && typeof window.ScrollTrigger !== 'undefined';
   const lenis = window.tekLenis || null;
 
-  // each feature runs on its own, so one failing can never stop the others
   const run = (fn) => { try { fn(); } catch (err) { console.error('[motion] ' + fn.name + ' failed:', err); } };
 
   run(navAutoHide);
   run(productFilter);
   run(spotlightBasics);
-  run(heroDashboard);          // <-- new, must run even without GSAP
+  run(heroDashboard);          // runs regardless of GSAP
   if (!HAS_GSAP || REDUCED) return;
 
   gsap.registerPlugin(ScrollTrigger);
@@ -53,7 +53,7 @@
       last = y;
     }
     window.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(update); } }, { passive: true });
-    bar.addEventListener('focusin', () => bar.classList.remove('is-hidden')); // keyboard users always see it
+    bar.addEventListener('focusin', () => bar.classList.remove('is-hidden'));
     update();
   }
 
@@ -66,7 +66,6 @@
     ScrollTrigger.create({ ...st, onUpdate: (s) => { window.__tekHero = s.progress; } });
     gsap.to('.hero-text', { yPercent: -22, ease: 'none', scrollTrigger: st });
     gsap.to('.hero-text', { opacity: 0.15, ease: 'none', scrollTrigger: { ...st, start: 'top+=10% top' } });
-    // each glass card drifts its own way (x/yPercent only, so it combines with the intro and mouse-follow)
     const paths = [[-70, -60, -6], [60, -30, 5], [-40, 60, -4]];
     gsap.utils.toArray('.hero .hud').forEach((h, i) => {
       const [x, y, r] = paths[i % paths.length];
@@ -94,7 +93,7 @@
       if (!h) return;
       const words = splitWords(h);
       const extras = [...head.children].filter((c) => c !== h);
-      if (head.getBoundingClientRect().top < window.innerHeight * 0.9) return; // already on screen: leave it still
+      if (head.getBoundingClientRect().top < window.innerHeight * 0.9) return;
       gsap.set(words, { yPercent: 115, rotate: 4 });
       gsap.set(extras, { opacity: 0, y: 22 });
       let done = false;
@@ -128,7 +127,6 @@
     const cards = [...track.querySelectorAll('.spot-card')];
     const now = document.getElementById('spotNow');
     const bar = document.getElementById('spotBar');
-    // place each card in 3D by its distance from the centre of the view
     function layout() {
       const v = viewport.getBoundingClientRect();
       const mid = v.left + v.width / 2;
@@ -147,7 +145,6 @@
       if (now) now.textContent = String(best + 1).padStart(2, '0');
     }
     track.__layout = layout;
-    // swipe / scroll-snap version (phones, reduced motion, or no GSAP)
     viewport.addEventListener('scroll', () => requestAnimationFrame(() => {
       layout();
       const m = viewport.scrollWidth - viewport.clientWidth;
@@ -173,7 +170,6 @@
         };
         gsap.to(track, {
           x: () => -shift(), ease: 'none',
-          // `this` is the tween: it can update while it's still being created, before the variable exists
           onUpdate() { track.__layout(); if (bar) bar.style.transform = `scaleX(${this.progress()})`; },
           scrollTrigger: { trigger: section, start: 'top top', end: () => '+=' + shift() * 1.1, pin: true, scrub: 0.8, invalidateOnRefresh: true, anticipatePin: 1 },
         });
@@ -249,31 +245,68 @@
   }
 
   /* ============================================================
-     NEW: hero telemetry dashboard
-     Live RPM / efficiency / tension, with a sparkline that dips
-     to zero on a "yarn break" and recovers — like a real spindle
-     monitoring HMI. Runs independently of GSAP.
+     HERO TELEMETRY DASHBOARD — upgraded
+     · live RPM / efficiency / tension with gentle noise
+     · sparkline with dashed nominal line and glow head dot
+     · 24-dot spindle matrix (one flashes red on break)
+     · value bump flash + status pill + toast banner
+     · syncs to 'tek:spindle-alert' dispatched by hero3d.js
      ============================================================ */
   function heroDashboard() {
-    const panel   = document.getElementById('heroDash');
-    const canvas  = document.getElementById('hdCanvas');
+    const panel    = document.getElementById('heroDash');
+    const canvas   = document.getElementById('hdCanvas');
     if (!panel || !canvas) return;
-    const ctx      = canvas.getContext('2d');
-    const rpmEl    = document.getElementById('hdRpm');
-    const effEl    = document.getElementById('hdEff');
-    const tenEl    = document.getElementById('hdTen');
-    const statusEl = document.getElementById('hdStatus');
-    const spindleEl= document.getElementById('hdSpindle');
 
+    const ctx       = canvas.getContext('2d');
+    const rpmEl     = document.getElementById('hdRpm');
+    const effEl     = document.getElementById('hdEff');
+    const tenEl     = document.getElementById('hdTen');
+    const statusEl  = document.getElementById('hdStatus');
+    const spindleEl = document.getElementById('hdSpindle');
+    const matrixEl  = document.getElementById('hdMatrix');
+    const rpmWrap   = document.getElementById('hdRpmWrap');
+    const effWrap   = document.getElementById('hdEffWrap');
+    const tenWrap   = document.getElementById('hdTenWrap');
+
+    /* --- build the spindle matrix (one dot per spindle) --- */
+    const DOT_COUNT = 24;
+    const dots = [];
+    if (matrixEl) {
+      for (let i = 0; i < DOT_COUNT; i++) {
+        const d = document.createElement('i');
+        matrixEl.appendChild(d);
+        dots.push(d);
+      }
+    }
+    function flashDot() {
+      if (!dots.length) return;
+      dots.forEach((d) => d.classList.remove('is-broken'));
+      const idx = Math.floor(Math.random() * dots.length);
+      dots[idx].classList.add('is-broken');
+      setTimeout(() => dots[idx] && dots[idx].classList.remove('is-broken'), 2800);
+    }
+
+    /* --- bump flash on a metric value --- */
+    function bump(el) {
+      if (!el) return;
+      el.classList.remove('is-bump');
+      // force reflow so the animation restarts
+      void el.offsetWidth;
+      el.classList.add('is-bump');
+      setTimeout(() => el.classList.remove('is-bump'), 750);
+    }
+
+    /* --- sparkline history --- */
     const POINTS = 64;
-    const RPM_IDLE = 18240, EFF_IDLE = 98.6, TEN_IDLE = 4.12;
+    const RPM_IDLE = 18240, EFF_IDLE = 98.6, TEN_IDLE = 4.12, NOMINAL = 98.6;
     const data = new Array(POINTS).fill(EFF_IDLE);
 
     const s = {
       rpm: RPM_IDLE, eff: EFF_IDLE, ten: TEN_IDLE,
       spindle: 142,
       phase: 'run', phaseT: 0, breakFor: 2.4,
-      nextBreak: 5 + Math.random() * 5,
+      nextBreak: 6 + Math.random() * 5,
+      lastBreakAt: -99,
       status: 'Running',
     };
 
@@ -302,13 +335,25 @@
       const stepX = w / (POINTS - 1);
       const toY = (v) => h - (Math.max(0, Math.min(100, v)) / 100) * (h - 8) - 4;
 
+      // dashed nominal line at ~98.6%
+      const nominalY = toY(NOMINAL);
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(130,180,255,.28)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, nominalY);
+      ctx.lineTo(w, nominalY);
+      ctx.stroke();
+      ctx.restore();
+
       const alert = s.phase !== 'run';
-      const line = alert ? '#ff3b1f' : '#19d38f';
+      const line  = alert ? '#ff3b1f' : '#19d38f';
 
       // area fill
       const grd = ctx.createLinearGradient(0, 0, 0, h);
-      grd.addColorStop(0, alert ? 'rgba(255,59,31,.38)' : 'rgba(25,211,143,.38)');
-      grd.addColorStop(1, 'rgba(25,211,143,0)');
+      grd.addColorStop(0, alert ? 'rgba(255,59,31,.42)' : 'rgba(25,211,143,.42)');
+      grd.addColorStop(1, alert ? 'rgba(255,59,31,0)'  : 'rgba(25,211,143,0)');
       ctx.beginPath();
       ctx.moveTo(0, h);
       for (let i = 0; i < POINTS; i++) ctx.lineTo(i * stepX, toY(data[i]));
@@ -327,7 +372,10 @@
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
+      ctx.shadowColor = line;
+      ctx.shadowBlur = alert ? 10 : 4;
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
       // head dot with a soft glow
       const lx = (POINTS - 1) * stepX, ly = toY(data[POINTS - 1]);
@@ -340,9 +388,26 @@
       ctx.shadowBlur = 0;
     }
 
+    /* --- react to the 3D alert --- */
+    document.addEventListener('tek:spindle-alert', (e) => {
+      if (e && e.detail && e.detail.spindle && spindleEl) {
+        s.spindle = e.detail.spindle;
+      }
+      const now = performance.now() / 1000;
+      if (s.phase === 'run' && (now - s.lastBreakAt) > 5) {
+        s.phase = 'break';
+        s.phaseT = 0;
+        s.breakFor = 2.2 + Math.random() * 1.2;
+        s.lastBreakAt = now;
+      }
+      flashDot();
+      if (spindleEl) spindleEl.textContent = 'Spindle ' + s.spindle;
+    });
+
+    /* --- main loop --- */
     let last = performance.now();
     let acc = 0;
-    const STEP = 0.36; // seconds per graph sample → ~23 s of history
+    const STEP = 0.36; // seconds per graph sample
 
     function frame(now) {
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -350,8 +415,9 @@
       acc += dt;
       s.phaseT += dt;
 
+      const prevPhase = s.phase;
+
       if (s.phase === 'run') {
-        // gentle natural fluctuation
         s.rpm += (RPM_IDLE - s.rpm) * 0.18 + (Math.random() - 0.5) * 90;
         s.rpm = Math.max(17700, Math.min(18700, s.rpm));
         s.eff += (EFF_IDLE - s.eff) * 0.14 + (Math.random() - 0.5) * 0.7;
@@ -364,10 +430,11 @@
           s.phaseT = 0;
           s.breakFor = 2.2 + Math.random() * 1.4;
           s.spindle = 100 + Math.floor(Math.random() * 900);
+          s.lastBreakAt = performance.now() / 1000;
           if (spindleEl) spindleEl.textContent = 'Spindle ' + s.spindle;
+          flashDot();
         }
       } else if (s.phase === 'break') {
-        // decay towards zero
         s.rpm *= 0.80; s.eff *= 0.80; s.ten *= 0.78;
         if (s.rpm < 40)  s.rpm = 0;
         if (s.eff < 0.6) s.eff = 0;
@@ -375,12 +442,22 @@
         s.status = 'Yarn break';
         if (s.phaseT > s.breakFor) { s.phase = 'recover'; s.phaseT = 0; }
       } else {
-        // climb back to nominal
         s.rpm += (RPM_IDLE - s.rpm) * 0.07;
         s.eff += (EFF_IDLE - s.eff) * 0.07;
         s.ten += (TEN_IDLE - s.ten) * 0.07;
         s.status = 'Recovering';
         if (s.eff > 97.6) { s.phase = 'run'; s.phaseT = 0; s.nextBreak = 6 + Math.random() * 6; }
+      }
+
+      // bump the metric values whenever the phase changes
+      if (s.phase !== prevPhase) {
+        bump(rpmWrap); bump(effWrap); bump(tenWrap);
+      }
+
+      // occasional tiny "tick" bump for liveliness
+      if (Math.random() < 0.0012) {
+        const pick = [rpmWrap, effWrap, tenWrap][Math.floor(Math.random() * 3)];
+        bump(pick);
       }
 
       if (rpmEl) rpmEl.textContent = Math.round(s.rpm).toLocaleString('en-US');
@@ -411,7 +488,6 @@
   }
 
   /* ---------- helpers ---------- */
-  // wrap each word in a mask span; keeps nested elements like <em> and the spaces between words
   function splitWords(el) {
     const words = [];
     (function walk(node) {
@@ -439,7 +515,6 @@
     return words;
   }
 
-  // if an element sits on screen for 1.5 s without its reveal firing, run the reveal anyway
   function failsafe(el, reveal) {
     let seen = 0;
     const id = setInterval(() => {

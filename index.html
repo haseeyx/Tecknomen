@@ -15,24 +15,36 @@
 <link rel="stylesheet" href="style.css">
 <style>
 /* ============================================================
-   HERO TELEMETRY DASHBOARD (new)
-   Small live "admin panel" widget that sits over the 3D stage.
+   HERO — a touch taller so the 3D stage and telemetry breathe
    ============================================================ */
+.hero {
+  padding-bottom: clamp(60px, 12vh, 150px) !important;
+}
+@media (min-width: 900px) {
+  .hero { min-height: 108vh !important; }
+  .hero-grid { padding-top: clamp(28px, 5vh, 70px) !important; }
+}
+
+/* ============================================================
+   HERO TELEMETRY DASHBOARD (upgraded)
+   ============================================================ */
+@property --dash-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
 .hero .hero-visual { position: relative; }
 
 .hero-dash {
   position: absolute;
   left: clamp(6px, 2.5%, 22px);
   bottom: clamp(6px, 3%, 22px);
-  width: min(330px, 84%);
-  padding: 12px 14px 11px;
+  width: min(340px, 86%);
+  padding: 12px 14px 12px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(11,24,48,.82) 0%, rgba(7,16,34,.90) 100%);
+  background: linear-gradient(180deg, rgba(11,24,48,.86) 0%, rgba(7,16,34,.92) 100%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid rgba(130,180,255,.18);
   box-shadow:
-    0 22px 60px rgba(2,10,30,.5),
+    0 22px 60px rgba(2,10,30,.55),
     inset 0 1px 0 rgba(255,255,255,.07);
   color: #e9f0ff;
   z-index: 4;
@@ -40,13 +52,71 @@
   font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   font-variant-numeric: tabular-nums;
   transition: border-color .35s ease, box-shadow .35s ease;
+  isolation: isolate;
 }
+
+/* rotating conic-gradient border (subtle sweep of light) */
+.hero-dash::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--dash-angle, 0deg),
+    rgba(130,180,255,0)    0deg,
+    rgba(130,180,255,.65) 60deg,
+    rgba(130,180,255,0)  140deg,
+    rgba(130,180,255,0)  360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: dashSpin 7s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes dashSpin { to { --dash-angle: 360deg; } }
+
 .hero-dash.is-alert {
-  border-color: rgba(255,80,50,.62);
+  border-color: rgba(255,80,50,.65);
   box-shadow:
-    0 22px 60px rgba(255,60,30,.30),
-    0 0 0 1px rgba(255,80,50,.25),
+    0 22px 60px rgba(255,60,30,.32),
+    0 0 0 1px rgba(255,80,50,.28),
     inset 0 1px 0 rgba(255,255,255,.07);
+}
+.hero-dash.is-alert::before {
+  background: conic-gradient(from var(--dash-angle, 0deg),
+    rgba(255,80,50,0)    0deg,
+    rgba(255,80,50,.95) 60deg,
+    rgba(255,80,50,0)  140deg,
+    rgba(255,80,50,0)  360deg);
+  animation-duration: 1.6s;
+}
+
+/* slide-in toast above the panel */
+.hd-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  margin-bottom: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,59,31,.96), rgba(200,30,15,.96));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 10px 26px rgba(255,60,30,.45);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 10px) scale(.94);
+  transition: opacity .3s ease, transform .4s cubic-bezier(.2,.9,.3,1.35);
+  z-index: 3;
+}
+.hero-dash.is-alert .hd-toast {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
 }
 
 .hd-head {
@@ -56,18 +126,34 @@
   color: #8fb0e0;
 }
 .hd-dot {
+  position: relative;
   width: 7px; height: 7px; border-radius: 50%;
-  background: #19d38f; box-shadow: 0 0 10px #19d38f;
+  background: #19d38f;
+  box-shadow: 0 0 10px #19d38f;
   animation: hdPulse 1.8s ease-in-out infinite;
   flex: none;
 }
-.hero-dash.is-alert .hd-dot {
+.hd-dot::after {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: 7px; height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: #19d38f;
+  animation: hdRing 1.8s ease-out infinite;
+}
+.hero-dash.is-alert .hd-dot,
+.hero-dash.is-alert .hd-dot::after {
   background: #ff3b1f;
   box-shadow: 0 0 16px #ff3b1f, 0 0 32px rgba(255,59,31,.6);
 }
 @keyframes hdPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50%      { transform: scale(1.4); opacity: .6; }
+  50%      { transform: scale(1.35); opacity: .65; }
+}
+@keyframes hdRing {
+  0%   { transform: scale(1); opacity: .85; }
+  100% { transform: scale(3.6); opacity: 0; }
 }
 .hd-title { font-weight: 600; color: #dbe7ff; }
 .hd-frame { margin-left: auto; color: #7fa0d0; white-space: nowrap; }
@@ -92,17 +178,59 @@
   font-size: 14px; font-weight: 500; color: #eaf4ff;
   display: flex; align-items: baseline; gap: 3px;
   line-height: 1.1; white-space: nowrap;
+  transition: color .3s ease, text-shadow .3s ease;
 }
 .hd-value small { font-size: 9px; color: #7e9ccb; font-weight: 400; letter-spacing: .04em; }
 .hero-dash.is-alert .hd-value { color: #ff8b73; }
 
+/* value bump flash on significant change */
+.hd-value.is-bump { animation: hdBump .7s ease-out; }
+@keyframes hdBump {
+  0%   { color: #ffffff; text-shadow: 0 0 16px rgba(120,220,255,.95); transform: translateY(-1.5px); }
+  100% { color: inherit; text-shadow: none; transform: none; }
+}
+.hero-dash.is-alert .hd-value.is-bump {
+  animation-name: hdBumpAlert;
+}
+@keyframes hdBumpAlert {
+  0%   { color: #ffffff; text-shadow: 0 0 18px rgba(255,90,60,.95); transform: translateY(-1.5px); }
+  100% { color: #ff8b73; text-shadow: none; transform: none; }
+}
+
 .hd-graph {
-  width: 100%; height: 56px;
+  position: relative;
+  width: 100%; height: 62px;
   border-radius: 10px; overflow: hidden;
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.05);
 }
 .hd-graph canvas { display: block; width: 100%; height: 100%; }
+
+/* scan-line sweep across the graph */
+.hd-graph::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(120,220,255,.10) 45%,
+    rgba(120,220,255,.22) 50%,
+    rgba(120,220,255,.10) 55%,
+    transparent 100%);
+  transform: translateX(-100%);
+  animation: hdScan 4.2s linear infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.hero-dash.is-alert .hd-graph::after {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,90,60,.16) 45%,
+    rgba(255,90,60,.34) 50%,
+    rgba(255,90,60,.16) 55%,
+    transparent 100%);
+  animation-duration: 1.6s;
+}
+@keyframes hdScan { to { transform: translateX(100%); } }
 
 .hd-graph-foot {
   display: flex; justify-content: space-between; align-items: center;
@@ -115,20 +243,48 @@
   font-weight: 600; text-transform: uppercase; font-size: 9px;
   transition: background .3s, color .3s;
 }
-.hd-status.is-alert { background: rgba(255,59,31,.16); color: #ff6a4d; }
+.hd-status.is-alert { background: rgba(255,59,31,.18); color: #ff6a4d; }
+
+/* spindle matrix: one dot per spindle, one flashes on a break */
+.hd-matrix {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.hd-matrix i {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #19d38f;
+  box-shadow: 0 0 6px rgba(25,211,143,.55);
+  opacity: .78;
+  transition: background .25s, box-shadow .25s, opacity .25s, transform .25s;
+}
+.hd-matrix i.is-broken {
+  background: #ff3b1f;
+  box-shadow: 0 0 14px #ff3b1f, 0 0 26px rgba(255,59,31,.75);
+  opacity: 1;
+  transform: scale(1.35);
+  animation: hdBlink .55s steps(2, end) infinite;
+}
+@keyframes hdBlink { 50% { opacity: .32; } }
 
 @media (max-width: 980px) {
-  .hero-dash { width: min(300px, 90%); }
+  .hero-dash { width: min(310px, 92%); }
 }
 @media (max-width: 640px) {
   .hero-dash {
     left: 8px; right: 8px; bottom: 8px;
     width: auto;
-    padding: 10px 12px 9px;
+    padding: 10px 12px 10px;
   }
   .hd-metrics { gap: 5px; }
   .hd-value { font-size: 12.5px; }
-  .hd-graph { height: 46px; }
+  .hd-graph { height: 50px; }
+  .hd-matrix { grid-template-columns: repeat(18, 1fr); }
 }
 </style>
 </head>
@@ -193,36 +349,43 @@
           <span class="hud-bar"><i></i></span>
         </div>
 
-        <!-- ===== NEW: live telemetry dashboard ===== -->
+        <!-- ===== UPGRADED: live telemetry dashboard ===== -->
         <div class="hero-dash" id="heroDash" role="group" aria-label="Live spindle telemetry">
+          <span class="hd-toast" aria-hidden="true">⚠ Yarn break detected</span>
+
           <div class="hd-head">
             <span class="hd-dot" aria-hidden="true"></span>
             <span class="hd-title">Live telemetry</span>
             <span class="hd-frame" id="hdSpindle">Spindle 142</span>
           </div>
+
           <div class="hd-metrics">
             <div class="hd-metric">
               <span class="hd-label">Speed</span>
-              <strong class="hd-value"><span id="hdRpm">18,240</span><small>rpm</small></strong>
+              <strong class="hd-value" id="hdRpmWrap"><span id="hdRpm">18,240</span><small>rpm</small></strong>
             </div>
             <div class="hd-metric">
               <span class="hd-label">Efficiency</span>
-              <strong class="hd-value"><span id="hdEff">98.6</span><small>%</small></strong>
+              <strong class="hd-value" id="hdEffWrap"><span id="hdEff">98.6</span><small>%</small></strong>
             </div>
             <div class="hd-metric">
               <span class="hd-label">Tension</span>
-              <strong class="hd-value"><span id="hdTen">4.12</span><small>cN</small></strong>
+              <strong class="hd-value" id="hdTenWrap"><span id="hdTen">4.12</span><small>cN</small></strong>
             </div>
           </div>
+
           <div class="hd-graph">
             <canvas id="hdCanvas" aria-hidden="true"></canvas>
           </div>
+
           <div class="hd-graph-foot">
             <span>Output · last 60 s</span>
             <span class="hd-status" id="hdStatus">Running</span>
           </div>
+
+          <div class="hd-matrix" id="hdMatrix" aria-hidden="true"></div>
         </div>
-        <!-- ===== /NEW ===== -->
+        <!-- ===== /UPGRADED ===== -->
       </div>
     </div>
     <a class="scroll-cue" href="#clients" aria-label="Scroll to content"><span class="scroll-mouse"><i></i></span>Scroll</a>
@@ -257,7 +420,7 @@
     </div>
   </section>
 
-  <!-- ============ SPOTLIGHT: pinned 3D coverflow of the flagship products (cards generated) ============ -->
+  <!-- ============ SPOTLIGHT ============ -->
 <section class="spotlight" id="spotlight" aria-label="Engineering capabilities">
     <div class="spot-pin">
       <div class="container spot-head">
@@ -355,8 +518,6 @@
             </span>
           </a>
         </article>
-      
-      
         <article class="spot-card" data-title="Support for the life of the system">
           <a class="spot-link" href="#quote">
             <span class="spot-img">
@@ -379,7 +540,7 @@
     </div>
   </section>
 
-  <!-- ============ PRODUCTS (cards generated by tools/build_products.py) ============ -->
+  <!-- ============ PRODUCTS ============ -->
 <section class="section section-products" id="products">
   <div class="container">
     <div class="sec-head reveal">
@@ -387,9 +548,7 @@
       <h2>The full product range.</h2>
       <p class="sec-lead">Retrofit software, monitoring, drives and power protection. Each one is designed, tested and supported by our own engineers.</p>
     </div>
-   
 
-    <!-- UNIFORM GRID CONTAINER -->
     <div class="bento" style="display:grid !important;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)) !important;gap:24px !important;align-items:stretch !important;">
 
 <!-- BUILD:products -->
@@ -526,7 +685,6 @@
   <!-- ============ SERVICES ============ -->
 <section class="section" id="services">
   <style>
-    /* Featured service card animations */
     .svc-feature {
       transition: transform .35s ease, box-shadow .35s ease;
       will-change: transform;
@@ -549,7 +707,6 @@
       color: #0b63d6;
     }
 
-    /* Fade-up entrance */
     @keyframes svcFadeUp {
       from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -569,7 +726,6 @@
       <p class="sec-lead">From a single drive repair to automating a full production line.</p>
     </div>
 
-    <!-- MAIN SERVICES – two featured cards with animations -->
     <div style="display:grid !important;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)) !important;gap:24px !important;margin-bottom:36px !important;">
 
       <a href="products/electronic.html" class="svc-feature svc-fade d1" style="display:flex !important;flex-direction:column !important;height:100% !important;text-decoration:none !important;background:#fff !important;border-radius:14px !important;overflow:hidden !important;box-shadow:0 4px 18px rgba(0,0,0,.06) !important;">
@@ -592,7 +748,6 @@
 
     </div>
 
-    <!-- SUPPORTING SERVICES GRID -->
     <div class="svc-grid">
       <article class="svc reveal svc-fade d1">
         <svg class="svc-ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="6" width="24" height="20" rx="3"/><path d="M4 12h24M9 17h4M9 21h8M20 17h3v4h-3z"/></svg>
@@ -665,20 +820,6 @@
     </div>
   </section>
 
-  <!--
-    PROJECTS / CASE STUDIES: hidden until real projects are added.
-    For each project fill in: client (with their permission), machines, what was installed, and a measured result.
-    Then remove the "hidden" attribute below.
-  -->
-  <section class="section" id="projects" hidden>
-    <div class="container">
-      <div class="sec-head"><p class="kicker">Projects</p><h2>Recent installations</h2></div>
-      <div class="feat-grid">
-        <article class="feat"><span class="feat-no">[Client] · [Year]</span><h3>[What was installed]</h3><p>[Problem, what was done, measured result]</p></article>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ FAQ ============ -->
   <section class="section" id="faq">
     <div class="container faq-layout">
@@ -696,7 +837,7 @@
     </div>
   </section>
 
-  <!-- ============ QUOTE (sends via WhatsApp, no server needed) ============ -->
+  <!-- ============ QUOTE ============ -->
   <section class="section quote-section" id="quote">
     <div class="container">
       <div class="quote-panel">
@@ -788,7 +929,7 @@
     (function () {
       function initScrollTop() {
         var btn = document.getElementById('scrollTopBtn');
-        if (!btn) return; // button not in DOM, exit safely
+        if (!btn) return;
 
         window.addEventListener('scroll', function () {
           if (window.scrollY > 300) {
