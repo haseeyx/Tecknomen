@@ -36,33 +36,6 @@
 }
 
 /* ============================================================
-   MOBILE ORDER: push the telemetry dashboard to the very bottom
-   of the hero, i.e. below the 3D stage — not above it.
-   `.hero-text` becomes transparent to layout so we can reorder
-   all its children against `.hero-visual` with flex `order`.
-   ============================================================ */
-@media (max-width: 900px) {
-  .hero-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
-  }
-  .hero-text {
-    display: contents !important;
-  }
-  .hero-text > .pill        { order: 1; }
-  .hero-text > .hero-title  { order: 2; }
-  .hero-text > .hero-lead   { order: 3; }
-  .hero-text > .actions     { order: 4; }
-  .hero-text > .hero-proof  { order: 5; }
-
-  .hero-visual              { order: 6; margin-top: 12px; }
-
-  /* dashboard sits at the very bottom, after the 3D stage */
-  .hero-text > .hero-dash   { order: 7; margin-top: 22px; margin-bottom: 4px; }
-}
-
-/* ============================================================
    HERO TELEMETRY DASHBOARD — 4-band efficiency colour system
    --st   = state colour
    --st-rgb = same colour as "r,g,b" so we can do rgba()
@@ -394,7 +367,31 @@
         </ul>
 
         <!-- ===== TELEMETRY DASHBOARD ===== -->
-        <div class="hero-dash is-eff-green hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
+       
+        <!-- ===== /TELEMETRY DASHBOARD ===== -->
+      </div>
+
+      <div class="hero-visual hero-anim" aria-label="3D model of ring frame spindles with live monitoring">
+        <div class="stage" id="stage3d"></div>
+        <div class="hud hud-a">
+          <span class="hud-dot"></span>
+          <span><small>Frame 07 · Spindle monitoring</small><strong>1,008 spindles running</strong></span>
+        </div>
+        <div class="hud hud-b">
+          <span class="hud-dot is-alert"></span>
+          <span><small>Spindle 142</small><strong>Yarn break detected</strong></span>
+        </div>
+        <div class="hud hud-c">
+          <small>Power-fail recovery</small>
+          <strong>Resumed in 4 s</strong>
+          <span class="hud-bar"><i></i></span>
+        </div>
+      </div>
+
+
+
+
+   <div class="hero-dash is-eff-green hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
           <span class="hd-toast" id="hdToast" aria-hidden="true">All spindles normal</span>
 
           <div class="hd-head">
@@ -454,25 +451,6 @@
 
           <div class="hd-matrix" id="hdMatrix" aria-hidden="true"></div>
         </div>
-        <!-- ===== /TELEMETRY DASHBOARD ===== -->
-      </div>
-
-      <div class="hero-visual hero-anim" aria-label="3D model of ring frame spindles with live monitoring">
-        <div class="stage" id="stage3d"></div>
-        <div class="hud hud-a">
-          <span class="hud-dot"></span>
-          <span><small>Frame 07 · Spindle monitoring</small><strong>1,008 spindles running</strong></span>
-        </div>
-        <div class="hud hud-b">
-          <span class="hud-dot is-alert"></span>
-          <span><small>Spindle 142</small><strong>Yarn break detected</strong></span>
-        </div>
-        <div class="hud hud-c">
-          <small>Power-fail recovery</small>
-          <strong>Resumed in 4 s</strong>
-          <span class="hud-bar"><i></i></span>
-        </div>
-      </div>
     </div>
     <a class="scroll-cue" href="#clients" aria-label="Scroll to content"><span class="scroll-mouse"><i></i></span>Scroll</a>
   </section>
@@ -889,8 +867,7 @@
       <div class="sec-head reveal">
         <p class="kicker">FAQ</p>
         <h2>Questions mills ask us.</h2>
-      </div>
-      <div class="faq reveal">
+      </div><div class="faq reveal">
         <details><summary>What industries do you serve?</summary><p>Mainly textile and spinning mills, plus manufacturing plants, energy and power facilities, packaging lines, pharmaceutical producers and food and beverage operations. Each solution is adapted to the industry&rsquo;s own requirements.</p></details>
         <details><summary>Do you install and commission on site?</summary><p>Yes. Every project includes on-site installation, calibration, operator training and a documented handover. Our engineers stay involved through the first production cycle.</p></details>
         <details><summary>Can you add automation to machines we already have?</summary><p>Yes. Retrofit is one of our core strengths. SpinGuard Pro, for example, adds automation to existing ring spinning frames without new hardware or changes to the base machine.</p></details>
