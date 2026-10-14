@@ -367,7 +367,33 @@
         </ul>
 
         <!-- ===== TELEMETRY DASHBOARD ===== -->
-        <div class="hero-dash is-eff-green hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
+       
+        <!-- ===== /TELEMETRY DASHBOARD ===== -->
+      </div>
+
+      <div class="hero-visual hero-anim" aria-label="3D model of ring frame spindles with live monitoring">
+        <div class="stage" id="stage3d"></div>
+        <div class="hud hud-a">
+          <span class="hud-dot"></span>
+          <span><small>Frame 07 · Spindle monitoring</small><strong>1,008 spindles running</strong></span>
+        </div>
+        <div class="hud hud-b">
+          <span class="hud-dot is-alert"></span>
+          <span><small>Spindle 142</small><strong>Yarn break detected</strong></span>
+        </div>
+        <div class="hud hud-c">
+          <small>Power-fail recovery</small>
+          <strong>Resumed in 4 s</strong>
+          <span class="hud-bar"><i></i></span>
+        </div>
+      </div>
+
+
+
+
+    
+
+ <div class="hero-dash is-eff-green hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
           <span class="hd-toast" id="hdToast" aria-hidden="true">All spindles normal</span>
 
           <div class="hd-head">
@@ -427,25 +453,16 @@
 
           <div class="hd-matrix" id="hdMatrix" aria-hidden="true"></div>
         </div>
-        <!-- ===== /TELEMETRY DASHBOARD ===== -->
-      </div>
 
-      <div class="hero-visual hero-anim" aria-label="3D model of ring frame spindles with live monitoring">
-        <div class="stage" id="stage3d"></div>
-        <div class="hud hud-a">
-          <span class="hud-dot"></span>
-          <span><small>Frame 07 · Spindle monitoring</small><strong>1,008 spindles running</strong></span>
-        </div>
-        <div class="hud hud-b">
-          <span class="hud-dot is-alert"></span>
-          <span><small>Spindle 142</small><strong>Yarn break detected</strong></span>
-        </div>
-        <div class="hud hud-c">
-          <small>Power-fail recovery</small>
-          <strong>Resumed in 4 s</strong>
-          <span class="hud-bar"><i></i></span>
-        </div>
-      </div>
+
+
+
+
+
+
+
+
+
     </div>
     <a class="scroll-cue" href="#clients" aria-label="Scroll to content"><span class="scroll-mouse"><i></i></span>Scroll</a>
   </section>
