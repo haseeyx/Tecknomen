@@ -24,6 +24,18 @@
 }
 
 /* ============================================================
+   FIX: keep hero lead / buttons / proof stats readable on scroll-up
+   GSAP fades these out on scroll-down and can leave them dim when
+   the user scrolls back up quickly. Locking opacity to 1 keeps them
+   always legible while the 3D stage and dashboard continue to move.
+   ============================================================ */
+.hero-text > .hero-lead,
+.hero-text > .actions,
+.hero-text > .hero-proof {
+  opacity: 1 !important;
+}
+
+/* ============================================================
    HERO TELEMETRY DASHBOARD — 4-band efficiency colour system
    --st   = state colour
    --st-rgb = same colour as "r,g,b" so we can do rgba()
@@ -31,7 +43,6 @@
 @property --dash-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
 
 .hero-dash {
-  /* default = green band */
   --st: #19d38f;
   --st-rgb: 25, 211, 143;
 
@@ -57,13 +68,11 @@
   isolation: isolate;
 }
 
-/* band colours */
 .hero-dash.is-eff-green  { --st: #19d38f; --st-rgb: 25, 211, 143; }
 .hero-dash.is-eff-blue   { --st: #4a9dff; --st-rgb: 74, 157, 255; }
 .hero-dash.is-eff-yellow { --st: #f5c542; --st-rgb: 245, 197, 66; }
 .hero-dash.is-eff-red    { --st: #ff3b1f; --st-rgb: 255, 59, 31; }
 
-/* rotating conic border — colour follows the state */
 .hero-dash::before {
   content: '';
   position: absolute;
@@ -89,7 +98,6 @@
 .hero-dash.is-eff-yellow::before { animation-duration: 3.4s; }
 .hero-dash.is-eff-red::before    { animation-duration: 1.6s; }
 
-/* slide-in toast */
 .hd-toast {
   position: absolute;
   left: 0;
@@ -195,7 +203,6 @@
 }
 .hd-value small { font-size: 9px; color: #7e9ccb; font-weight: 400; letter-spacing: .04em; transition: color .4s; }
 
-/* label + value take the state colour */
 .hero-dash.is-eff-blue   .hd-label,
 .hero-dash.is-eff-blue   .hd-value,
 .hero-dash.is-eff-blue   .hd-value small { color: var(--st); }
@@ -206,14 +213,12 @@
 .hero-dash.is-eff-red    .hd-value,
 .hero-dash.is-eff-red    .hd-value small { color: var(--st); }
 
-/* bump flash on state change */
 .hd-value.is-bump { animation: hdBump .8s ease-out; }
 @keyframes hdBump {
   0%   { color: #ffffff; text-shadow: 0 0 22px rgba(255,255,255,.85); transform: translateY(-2px); }
   100% { color: inherit; text-shadow: none; transform: none; }
 }
 
-/* icon wiggle on state change */
 .hd-ico.is-wiggle { animation: hdWiggle .8s ease-in-out; }
 @keyframes hdWiggle {
   0%, 100% { transform: rotate(0); }
@@ -233,7 +238,6 @@
 .hero-dash:not(.is-eff-green) .hd-graph { border-color: rgba(var(--st-rgb), .28); }
 .hd-graph canvas { display: block; width: 100%; height: 100%; }
 
-/* scan-line sweep — colour follows the state */
 .hd-graph::after {
   content: '';
   position: absolute; inset: 0;
@@ -277,7 +281,6 @@
   stroke-linejoin: round;
 }
 
-/* spindle matrix */
 .hd-matrix {
   display: grid;
   grid-template-columns: repeat(24, 1fr);
@@ -299,7 +302,6 @@
 .hd-matrix.is-ready i { animation: hdDotIn .55s cubic-bezier(.2,.9,.3,1.35) forwards; }
 @keyframes hdDotIn { to { transform: scale(1); opacity: .78; } }
 
-/* pulsing "focus" dot in the matrix */
 .hd-matrix i.is-focus {
   transform: scale(1.4);
   opacity: 1;
