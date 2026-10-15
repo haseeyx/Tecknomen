@@ -15,19 +15,273 @@
 <link rel="stylesheet" href="style.css">
 <style>
 /* ============================================================
-   HERO — a touch taller
+   HERO — responsive, scales up on large monitors
    ============================================================ */
-.hero { padding-bottom: clamp(60px, 12vh, 150px) !important; }
+
+.hero {
+  width: 100%;
+  height: auto;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: 90px 0 15px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
 @media (min-width: 900px) {
-  .hero { min-height: 108vh !important; }
-  .hero-grid { padding-top: clamp(28px, 5vh, 70px) !important; }
+  .hero {
+    height: 100vh;
+    height: 100svh;
+    min-height: 0;
+    padding-bottom: 15px;
+  }
+
+  .hero-grid {
+    height: 100% !important;
+    min-height: 0 !important;
+    padding-top: 0 !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: clamp(16px, 2vw, 48px);
+    row-gap: 8px;
+  }
+
+  .hero-text {
+    min-width: 0;
+  }
+
+  /* font sizes now keep growing on big screens */
+  .hero-title {
+    font-size: clamp(26px, 2.8vw, 72px);
+    line-height: 1.08;
+    margin: 12px 0;
+    overflow-wrap: break-word;
+  }
+
+  .hero-lead {
+    font-size: clamp(13px, 1vw, 20px);
+    line-height: 1.45;
+  }
+
+  .hero-proof {
+    margin-top: 12px;
+  }
+
+  /* visual grows with the screen instead of being stuck at 360px */
+  .hero-visual {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    max-height: min(68vh, 760px);
+  }
+
+  #stage3d {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-dash {
+    grid-column: 1;
+    justify-self: start;
+    width: 100%;
+    max-width: clamp(470px, 38vw, 760px);
+    min-width: 0;
+    margin-top: 0;
+    padding: 8px 12px;
+  }
+
+  .hero-dash .hd-graph {
+    height: clamp(32px, 3.4vh, 56px);
+  }
+
+  .hero-dash .hd-matrix {
+    display: none;
+  }
+}
+
+/* Keep hero text visible */
+
+.hero-text > .hero-lead,
+.hero-text > .actions,
+.hero-text > .hero-proof {
+  opacity: 1 !important;
+}
+
+/* ===== TABLET AND MOBILE ===== */
+
+@media (max-width: 899px) {
+  .hero {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 100px 0 30px;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    padding-top: 0 !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 22px;
+  }
+
+  .hero-text,
+  .hero-visual {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero-visual {
+    height: 300px;
+    max-height: none;
+  }
+
+  #stage3d {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-dash {
+    grid-column: 1;
+    justify-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0;
+  }
+}
+
+/* ===== SMALL MOBILE ===== */
+
+@media (max-width: 480px) {
+  .hero {
+    padding-top: 90px;
+    padding-bottom: 24px;
+  }
+
+  .hero-title {
+    font-size: clamp(25px, 7vw, 32px);
+  }
+
+  .hero-visual {
+    height: 250px;
+  }
+}
+
+/* ===== MOBILE: KEEP NATURAL SCROLLING ===== */
+
+@media (max-width: 899px) {
+  .hero {
+    height: auto !important;
+    min-height: 100svh !important;
+    padding-top: 100px !important;
+    padding-bottom: 30px !important;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    height: auto !important;
+    padding-top: 0 !important;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 22px;
+  }
+
+  .hero-visual {
+    height: 300px;
+    max-height: none;
+  }
+
+  .hero-dash {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0;
+  }
+}
+
+/* ============================================================
+   LARGE SCREEN FIX
+   Removes the "boxed" look (side borders + empty space) on big
+   monitors. Page now spans the full width; only the inner
+   content is capped at a wide, comfortable max width and
+   centred, and type scales up on very large displays.
+   ============================================================ */
+html {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body,
+body.pg-home {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  overflow-x: hidden;
+}
+
+main,
+header.nav-bar,
+footer.footer,
+.hero,
+.logos-section,
+.spotlight,
+.section,
+.section-tint,
+.dark,
+.quote-section {
+  width: 100%;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  box-sizing: border-box;
+}
+
+.container {
+  width: 100%;
+  max-width: 1680px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: clamp(16px, 3vw, 72px);
+  padding-right: clamp(16px, 3vw, 72px);
+  box-sizing: border-box;
+}
+
+/* Full-width sections: keep backgrounds edge to edge */
+.hero .mesh,
+.dark-glow {
+  left: 0;
+  right: 0;
+  width: 100%;
+}
+
+@media (min-width: 1800px) {
+  html { font-size: 112.5%; }
+  .container { max-width: 1840px !important; }
+}
+
+@media (min-width: 2400px) {
+  html { font-size: 125%; }
+  .container { max-width: 2200px !important; }
 }
 
 /* ============================================================
    FIX: keep hero lead / buttons / proof stats readable on scroll-up
-   GSAP fades these out on scroll-down and can leave them dim when
-   the user scrolls back up quickly. Locking opacity to 1 keeps them
-   always legible while the 3D stage and dashboard continue to move.
    ============================================================ */
 .hero-text > .hero-lead,
 .hero-text > .actions,
@@ -354,8 +608,8 @@
     <div class="container hero-grid">
       <div class="hero-text">
         <a class="pill hero-anim" href="products/spinguard-pro.html"><span class="pill-tag">New</span> SpinGuard Pro for EJM &amp; FA ring frames <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-        <h1 class="hero-title"><span class="line"><span>Control systems</span></span> <span class="line"><span>for machines</span></span> <span class="line"><span>that <em>can&rsquo;t stop.</em></span></span></h1>
-        <p class="hero-lead hero-anim">Teknomen designs, builds and services VFDs, retrofit control software, spindle monitoring and power backup for textile mills and industrial plants across Pakistan.</p>
+        <h1 class="hero-title"><span class="line"><span>Spindle Monitoring System</span></span> <span class="line"><span>for Textile Spinning Machine</span></span> <span class="line"><span>that <em>can&rsquo;t stop.</em></span></span></h1>
+        <p class="hero-lead hero-anim">Complete visibility, every spindle. Real-time spindle-level monitoring for textile ring spinning frames..</p>
         <div class="actions hero-anim">
           <a class="btn btn-dark" href="#products">Explore products <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
           <a class="btn btn-ghost" href="#quote">Request a quote</a>
@@ -367,7 +621,7 @@
         </ul>
 
         <!-- ===== TELEMETRY DASHBOARD ===== -->
-       
+
         <!-- ===== /TELEMETRY DASHBOARD ===== -->
       </div>
 
@@ -375,96 +629,81 @@
         <div class="stage" id="stage3d"></div>
         <div class="hud hud-a">
           <span class="hud-dot"></span>
-          <span><small>Frame 07 · Spindle monitoring</small><strong>1,008 spindles running</strong></span>
+          <!-- <span><small>Frame 07 · Spindle monitoring</small><strong>1,008 spindles running</strong></span> -->
         </div>
         <div class="hud hud-b">
           <span class="hud-dot is-alert"></span>
-          <span><small>Spindle 142</small><strong>Yarn break detected</strong></span>
+          <!-- <span><small>Spindle 142</small><strong>Yarn break detected</strong></span> -->
         </div>
         <div class="hud hud-c">
-          <small>Power-fail recovery</small>
-          <strong>Resumed in 4 s</strong>
+          <!-- <small>Power-fail recovery</small>
+          <strong>Resumed in 4 s</strong> -->
           <span class="hud-bar"><i></i></span>
         </div>
       </div>
 
+      <div class="hero-dash is-eff-green hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
+        <span class="hd-toast" id="hdToast" aria-hidden="true">All spindles normal</span>
 
-
-
-    
-
- <div class="hero-dash is-eff-green hero-anim" id="heroDash" role="group" aria-label="Live spindle telemetry">
-          <span class="hd-toast" id="hdToast" aria-hidden="true">All spindles normal</span>
-
-          <div class="hd-head">
-            <svg class="hd-broadcast" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4.9 4.9a10 10 0 0 0 0 14.2M7.8 7.8a6 6 0 0 0 0 8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/>
-              <circle cx="12" cy="12" r="2"/>
-            </svg>
-            <span class="hd-dot" aria-hidden="true"></span>
-            <span class="hd-title">Live telemetry</span>
-            <span class="hd-frame" id="hdSpindle">Spindle 142</span>
-          </div>
-
-          <div class="hd-metrics">
-            <div class="hd-metric">
-              <span class="hd-label">
-                <svg class="hd-ico" data-ico="rpm" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
-                  <path d="M13.4 12.6 19 7"/>
-                  <path d="M3.3 17a10 10 0 1 1 17.4 0"/>
-                </svg>
-                Speed
-              </span>
-              <strong class="hd-value" id="hdRpmWrap"><span id="hdRpm">18,240</span><small>rpm</small></strong>
-            </div>
-            <div class="hd-metric">
-              <span class="hd-label">
-                <svg class="hd-ico" data-ico="eff" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M3 3v18h18"/>
-                  <path d="M7 14l3-3 4 4 6-7"/>
-                </svg>
-                Efficiency
-              </span>
-              <strong class="hd-value" id="hdEffWrap"><span id="hdEff">98.6</span><small>%</small></strong>
-            </div>
-            <div class="hd-metric">
-              <span class="hd-label">
-                <svg class="hd-ico" data-ico="ten" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>
-                </svg>
-                Tension
-              </span>
-              <strong class="hd-value" id="hdTenWrap"><span id="hdTen">4.12</span><small>cN</small></strong>
-            </div>
-          </div>
-
-          <div class="hd-graph">
-            <canvas id="hdCanvas" aria-hidden="true"></canvas>
-          </div>
-
-          <div class="hd-graph-foot">
-            <span>Output · last 60 s</span>
-            <span class="hd-status" id="hdStatus">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              <span id="hdStatusText">Running</span>
-            </span>
-          </div>
-
-          <div class="hd-matrix" id="hdMatrix" aria-hidden="true"></div>
+        <div class="hd-head">
+          <svg class="hd-broadcast" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4.9 4.9a10 10 0 0 0 0 14.2M7.8 7.8a6 6 0 0 0 0 8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/>
+            <circle cx="12" cy="12" r="2"/>
+          </svg>
+          <span class="hd-dot" aria-hidden="true"></span>
+          <span class="hd-title">Live telemetry</span>
+          <span class="hd-frame" id="hdSpindle">Spindle 142</span>
         </div>
 
+        <div class="hd-metrics">
+          <div class="hd-metric">
+            <span class="hd-label">
+              <svg class="hd-ico" data-ico="rpm" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                <path d="M13.4 12.6 19 7"/>
+                <path d="M3.3 17a10 10 0 1 1 17.4 0"/>
+              </svg>
+              Speed
+            </span>
+            <strong class="hd-value" id="hdRpmWrap"><span id="hdRpm">18,240</span><small>rpm</small></strong>
+          </div>
+          <div class="hd-metric">
+            <span class="hd-label">
+              <svg class="hd-ico" data-ico="eff" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3v18h18"/>
+                <path d="M7 14l3-3 4 4 6-7"/>
+              </svg>
+              Efficiency
+            </span>
+            <strong class="hd-value" id="hdEffWrap"><span id="hdEff">98.6</span><small>%</small></strong>
+          </div>
+          <div class="hd-metric">
+            <span class="hd-label">
+              <svg class="hd-ico" data-ico="ten" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>
+              </svg>
+              Tension
+            </span>
+            <strong class="hd-value" id="hdTenWrap"><span id="hdTen">4.12</span><small>cN</small></strong>
+          </div>
+        </div>
 
+        <div class="hd-graph">
+          <canvas id="hdCanvas" aria-hidden="true"></canvas>
+        </div>
 
+        <div class="hd-graph-foot">
+          <span>Output · last 60 s</span>
+          <span class="hd-status" id="hdStatus">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span id="hdStatusText">Running</span>
+          </span>
+        </div>
 
-
-
-
-
-
+        <div class="hd-matrix" id="hdMatrix" aria-hidden="true"></div>
+      </div>
 
     </div>
-    <a class="scroll-cue" href="#clients" aria-label="Scroll to content"><span class="scroll-mouse"><i></i></span>Scroll</a>
   </section>
 
   <!-- ============ CLIENTS ============ -->
